@@ -1,0 +1,82 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\renewcommand{\thesubsection}{\thesection.\alph{subsection}}
+
+%-------------- TITLE -----------------%
+\author{James Ogle}
+\title{ECE414 -- Project Proposal}
+
+%---------- START DOCUMENT ------------%
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+\pagenumbering{arabic}
+\section*{Project Overview}
+\textbf{Project Name:} Reinforcement Learning for Autonomous Lunar Rover Exploration and Path-finding\\
+\noindent\textbf{Project Overview:}\\
+A rover is placed in a random spot in an unknown area and given an objective position to reach.
+The goal is for an agent on the rover to pick a destination in an unknown sections of the area, leading it closer to the end-goal objective.
+This overall problem scenario for the rover fits similar requirements for rovers performing lunar explorations, and tested by NASA in lunabotics competitions.
+
+%-------- ENVIRONMENT DESIGN ----------%
+\section*{Environment Design}
+The rover will operate in a grid-like environment space where parts of the grid will be "un-seeable" by the rover till it reaches a position within that part of the grid.
+This will create a similar environment to the rover exploring unknown areas in a lunar system like the moon to reach a known objective.
+These environments will be designed using a simple software package called Minigrid which can be easily implemented into a python code-base.
+The state space will contain the current position, known grid-space, boundaries of the unknown grid-spaces, and end goal position.
+The agent will be terminated after reaching this end-goal position.
+The rover's action choices will be discrete grid-selections on the boundaries of the unknown regions.
+Action states will contain probability failures that will be different from the rover failing to move into a "bad" grid-space.
+After the rover chooses a position (action) and begins moving will have 3 different outcomes:
+\begin{itemize}
+    \item successful move to chosen position
+    \item chosen position is not possible to reach (A* Algorithm cannot find a path)
+    \item The chosen path is reachable, but the rover fails due to unknown reason (eg. stuck)
+\end{itemize}
+Reward functions will be related to both the rover exploring unknown areas as well as proximity of unknown regions to the end-goal position.
+The distance traveled for each move will also be taken into account for the reward, where longer distance moves will be punished more the closer the rover gets to the end-goal.
+If the rover fails to reach a chosen position that is reachable, the agent will be called to make a new decision to help the rover continue moving. 
+These failures will be accounted for through probabilities on each action compared to unreachable chosen positions being a deterministic failure.
+
+%-------- TECHNICAL CHALLENGES --------%
+\section*{Technical Challenges}
+\begin{itemize}
+    \item \textbf{Stochastic Environment:} The rover may fail to move to a selected grid position even when the planned path appears valid.
+    These failures could occur because of obstacles that have not yet been discovered or because the rover becomes stuck after entering a seemingly valid position.
+    The environment will introduce probabilistic movement failures, requiring the agent to adapt its decisions and recover from unexpected outcomes.
+    \item \textbf{Path Planning in an Unknown Environment:} The exploration agent and path-finding algorithm must coordinate to navigate an initially unknown grid.
+    The exploration agent will select promising target locations that reveal new areas of the map while moving the rover toward its final goal, and A* algorithm will determine a route to the selected target.
+    A key challenge will be accounting for stochastic outcomes from subroutines not controlled by the agent and their effect on the reward for the agent's actions.
+\end{itemize}
+%------------ RL APPROACH -------------%
+\section*{Reinforcement Learning Approach}
+The reinforcement learning algorithm for the agent will be the tabular Q-learning algorithm.
+The reason for this approach is by using an algorithm that is more efficient then a deep-learning model, the model will not choke the processor on the rover and prevent other actions on the rover from occurring.
+Another benefit of this algorithm is the ease of implementation allowing me to focus on developing the overall environment and reward system the agent will be interacting with.
+Due to not including high-dimension inputs into the agent decision-making process, I do not think a deep-learning model will be required to accomplish the agent's task.
+
+%----- RESEARCH QUESTION & EVAL -------%
+\section*{Research Question \& Evaluation}
+\textbf{Question:} Will the agent be able to accurately choose positions in an unknown grid that bring it to an final destination within that unknown grid while accounting for failed movements such as the rover becoming stuck.
+
+\subsection*{Evaluation}
+\noindent The agent will be compared to traditional cost maps approaches in path-finding efficiency to positions in unknown areas and recovering from failure.
+There will not be an evaluation on how the path selected to travel to a chosen position since I will be use A* algorithm as a baseline for both the cost map and agent.
+The evaluation metric will focus on how well the agent can choose "checkpoint" positions to reach the end-goal.
+The metric will take into account will be time-to-reach destination and total distance traveled.
+Currently, the type of cost map compared to the agent will be a Probabilistic Occupancy Grid where each grid has a probability ranging (0,1).
+This selection is based off the current use of this cost map in University of Tennessee Lunabotics club. 
+Future goals to take into account will be time to make decision after receiving new grid data but this could be out of scope for this project. 
+
+%----- EXPECTED RESULTS & PLAN --------%
+\section*{Expected Results \& Four-Week Plan}
+Overall outcome for the project should be for the agent to solve the problem scenario described in the \textit{Project Overview} Section.
+Project difficulties will revolve around how the agent will interact with the environment, and the reward system for the agent.
+The first week will focus on setting up basic environment template and multiple environment grid-structures that fit the criteria listed above in \textit{Environment Design} section.
+The second week will focus on setting up model code of the agent, and the third and 4th week will be developing and modifying how the model interacts with the system.
+This interaction will include how and the amount of rewards it receives for each action as well has different probabilistic amounts for each action.
+These should be tested across different environment structures to test how it performs across different grid structures to aim for general model rather than hyper-specific agent.
+
+\end{document}
