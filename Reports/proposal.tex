@@ -14,8 +14,8 @@
 \maketitle
 \pagenumbering{arabic}
 \section*{Project Overview}
-\textbf{Project Name:} Reinforcement Learning for Autonomous Lunar Rover Exploration and Path-finding\\
-\noindent\textbf{Project Overview:}\\
+\textbf{Project Name:} Reinforcement Learning for Autonomous Lunar Rover Exploration
+\subsection*{Project Introduction}
 A rover is placed in a random spot in an unknown area and given an objective position to reach.
 The goal is for an agent on the rover to pick a destination in an unknown sections of the area, leading it closer to the end-goal objective.
 This overall problem scenario for the rover fits similar requirements for rovers performing lunar explorations, and tested by NASA in lunabotics competitions.
@@ -28,17 +28,35 @@ These environments will be designed using a simple software package called Minig
 The state space will contain the current position, known grid-space, boundaries of the unknown grid-spaces, and end goal position.
 The agent will be terminated after reaching this end-goal position.
 The rover's action choices will be discrete grid-selections on the boundaries of the unknown regions.
-Action states will contain probability failures that will be different from the rover failing to move into a "bad" grid-space.
-After the rover chooses a position (action) and begins moving will have 3 different outcomes:
+Each action (choice of target position) carries a probability of failure, distinct from choosing a target in an unreachable/obstructed region.
+After the rover chooses a position (action), 3 different outcomes can occur:
 \begin{itemize}
     \item successful move to chosen position
     \item chosen position is not possible to reach (A* Algorithm cannot find a path)
     \item The chosen path is reachable, but the rover fails due to unknown reason (eg. stuck)
 \end{itemize}
-Reward functions will be related to both the rover exploring unknown areas as well as proximity of unknown regions to the end-goal position.
-The distance traveled for each move will also be taken into account for the reward, where longer distance moves will be punished more the closer the rover gets to the end-goal.
+The reward functions will be effected by 4 different variables in the environment:
+\begin{itemize}
+    \item progress reward toward the goal
+    \item exploration/information-gain reward for revealing new grid area
+    \item step/distance penalty 
+    \item failure penalty
+\end{itemize}
 If the rover fails to reach a chosen position that is reachable, the agent will be called to make a new decision to help the rover continue moving. 
-These failures will be accounted for through probabilities on each action compared to unreachable chosen positions being a deterministic failure.
+
+%
+%\begin{center}
+%\begin{tabular} { |c|c| }
+%    \hline
+%    state & random text \\
+%    \hline
+%    reward\_1 & random text \\
+%    \hline
+%    reward\_2 & random text \\
+%    \hline
+%    reward\_3 & random text \\
+%\end{tabular} 
+%\end{center}
 
 %-------- TECHNICAL CHALLENGES --------%
 \section*{Technical Challenges}
@@ -46,9 +64,8 @@ These failures will be accounted for through probabilities on each action compar
     \item \textbf{Stochastic Environment:} The rover may fail to move to a selected grid position even when the planned path appears valid.
     These failures could occur because of obstacles that have not yet been discovered or because the rover becomes stuck after entering a seemingly valid position.
     The environment will introduce probabilistic movement failures, requiring the agent to adapt its decisions and recover from unexpected outcomes.
-    \item \textbf{Path Planning in an Unknown Environment:} The exploration agent and path-finding algorithm must coordinate to navigate an initially unknown grid.
-    The exploration agent will select promising target locations that reveal new areas of the map while moving the rover toward its final goal, and A* algorithm will determine a route to the selected target.
-    A key challenge will be accounting for stochastic outcomes from subroutines not controlled by the agent and their effect on the reward for the agent's actions.
+    \item \textbf{Path Planning in an Unknown Environment:} The agent must select target locations that reveal new map areas while progressing toward the goal, using only partially-observed state.
+    A key challenge is that A -- a subroutine the agent does not control -- determines whether a chosen target is actually reachable, so the agent must learn from reward signals that depend on this external, sometimes-failing process.
 \end{itemize}
 %------------ RL APPROACH -------------%
 \section*{Reinforcement Learning Approach}
@@ -63,7 +80,7 @@ Due to not including high-dimension inputs into the agent decision-making proces
 
 \subsection*{Evaluation}
 \noindent The agent will be compared to traditional cost maps approaches in path-finding efficiency to positions in unknown areas and recovering from failure.
-There will not be an evaluation on how the path selected to travel to a chosen position since I will be use A* algorithm as a baseline for both the cost map and agent.
+There will not be an evaluation on how the path selected to travel to a chosen position since I will be use A* algorithm to compute the route for both the cost map and agent.
 The evaluation metric will focus on how well the agent can choose "checkpoint" positions to reach the end-goal.
 The metric will take into account will be time-to-reach destination and total distance traveled.
 Currently, the type of cost map compared to the agent will be a Probabilistic Occupancy Grid where each grid has a probability ranging (0,1).
@@ -74,9 +91,12 @@ Future goals to take into account will be time to make decision after receiving 
 \section*{Expected Results \& Four-Week Plan}
 Overall outcome for the project should be for the agent to solve the problem scenario described in the \textit{Project Overview} Section.
 Project difficulties will revolve around how the agent will interact with the environment, and the reward system for the agent.
-The first week will focus on setting up basic environment template and multiple environment grid-structures that fit the criteria listed above in \textit{Environment Design} section.
-The second week will focus on setting up model code of the agent, and the third and 4th week will be developing and modifying how the model interacts with the system.
-This interaction will include how and the amount of rewards it receives for each action as well has different probabilistic amounts for each action.
-These should be tested across different environment structures to test how it performs across different grid structures to aim for general model rather than hyper-specific agent.
+\begin{itemize}
+   \item \textbf{Week 1} will focus on setting up basic environment template and multiple environment grid-structures that fit the criteria listed above in \textit{Environment Design} section.
+    \item \textbf{Week 2} will focus on setting up Q-learning algorithm for the agent
+    \item \textbf{Week 3 \& 4} will be developing and modifying how the model interacts with the system. 
+    This interaction will include how and the amount of rewards it receives for each action as well has different probabilistic amounts for each action.
+\end{itemize}
 
+\noindent These should be tested across different environment structures to test how it performs across different grid structures to aim for general model rather than hyper-specific agent.
 \end{document}
