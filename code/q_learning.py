@@ -1,7 +1,7 @@
 """
 Training and evaluating the q-learning agent on the LunarRoverEnv
 """
-
+import argparse
 from lunar_rover_env import LunarRoverEnv
 from collections import defaultdict
 import numpy as np
@@ -10,7 +10,8 @@ import numpy as np
 Log info from Training
 - writing data out to csv
 """
-def logData(train_rewards, train_success, eval_rewards, eval_steps):
+def logData(train_rewards:list, train_steps:list, train_success:list,
+            eval_rewards:list, eval_steps:list, eval_success:list, output:str):
     pass
 
 """
@@ -44,12 +45,14 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
     rng = np.random.default_rng(seed)
     success = []
     rewards = []
+    tot_steps = []
     
     for episode in range(episodes):
         # resetting/initializing environemnt for new training episode
         observation, _ = env.reset(seed=seed)
         state = observationToState(observation)
         eps_rew = 0.0
+        steps = 0
         terminated = False
         truncated = False
 
@@ -68,25 +71,34 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
 
             state = next_state
             eps_rew += reward
+            steps += 1
 
         rewards.append(eps_rew)
         success.append(int(terminated))
+        tot_steps.append(steps)
 
     env.close()
-    return q_table
+    return q_table, rewards, success, tot_steps
 
 def evaluate(q_table, episodes=20, render=False, seed=7):
-    env = LunarRoverEnv()
+    if render:
+        env = LunarRoverEnv(render_mode="human")
+    else:
+        env = LunarRoverEnv()
+
     rng = np.random.default_rng(seed)
     epsilon = 0
     tot_rewards = []
+    tot_successes = []
     tot_steps = []
 
     for episode in range(episodes):
         steps = 0
         terminated = False
         truncated = False
-        observation, _ = env.reset(seed=seed)
+        # not using seed here to see how it performs
+        # across different grids
+        observation, _ = env.reset(seed=seed) 
         state = observationToState(observation)
         eps_rew = 0
 
@@ -101,9 +113,35 @@ def evaluate(q_table, episodes=20, render=False, seed=7):
 
         tot_rewards.append(eps_rew)
         tot_steps.append(tot_steps)
+        tot_successes.append(int(terminated))
 
-    return tot_rewards, tot_steps
+    env.close()
+    return tot_rewards, tot_successes,tot_steps
 
 if __name__ == "__main__":
-    q_table = train() 
-    evaluate(q_table=q_table, render=True)
+    p = argparse.ArgumentParser()
+    p.add_argument('--episodes', type=int, default=1000)
+    p.add_argument('--eval-episodes', type=int, default=20)
+    p.add_argument('--epsilon-start', type=float, default=1.0)
+    p.add_argument('--epsilon-end', type=float, default=0.05)
+    p.add_argument('--alpha', type=float, default=0.1)
+    p.add_argument('--gamma', type=float, default=0.95)
+    p.add_argument('--seed', type=int, default=7)
+    p.add_argument('--output', type=str, default='./results/run.csv') # output directory for data
+    
+    args = p.parse_args()
+    if min(args.episodes, args.eval_episodes) < 1:
+        p.error('episode arguments must positive')
+    if min(args.epsilon_start, args.epsilon_end, args.alpha, args.gamma) < 1:
+        p.error('epsilon and gamma arguments must be positive')
+
+    # create q_table implementing q-learning
+    q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
+                                                                 args.gamma, args.epsilon_start,
+                                                                 args.epsilon_end, args.seed) 
+
+    # evaluated the resulting table
+    eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes, render=True, seed=args.seed)
+
+    # logging data from run
+    logData(train_rewards, train_steps, train_successes, eval_rewards, eval_steps, eval_successes, args.output)
