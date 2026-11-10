@@ -4,6 +4,9 @@ Training and evaluating the q-learning agent on the LunarRoverEnv
 import argparse
 from lunar_rover_env import LunarRoverEnv
 from collections import defaultdict
+import csv
+import os
+from itertools import zip_longest
 import numpy as np
 
 """
@@ -12,7 +15,44 @@ Log info from Training
 """
 def logData(train_rewards:list, train_steps:list, train_success:list,
             eval_rewards:list, eval_steps:list, eval_success:list, output:str):
-    pass
+
+    # creating directory to store results in-case it does not exist
+    dir = os.path.dirname(output)
+    os.makedirs(dir, exist_ok=True) # skips creation if already exist
+
+    header = ['episodes',
+              'score',
+              'training successes',
+              'training rewards',
+              'training steps',]
+
+    episodes = list(range(len(train_rewards)-1)) # creating a episodes list with vals 0 -- len(train_rewards)-1
+    results = zip_longest(episodes, train_success, train_rewards, train_steps)
+
+    # write out training results
+    with open(output, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerow(results)
+
+    bn, type = os.path.splitext(output)
+    output_eval = f"{bn}_evaluation{type}"
+
+    # write out eval results
+    header = ['episodes',
+              'evaluation rewards',
+              'evaluation successes',
+              'evaluation steps']
+            
+    episodes = list(range(len(eval_rewards)-1)) # creating a episodes list with vals 0 -- len(train_rewards)-1
+    results = zip_longest(episodes, eval_success, eval_rewards, eval_steps)
+
+    with open(output_eval, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerow(results)
+
+    return
 
 """
 Turning Minigrid's observation into dict key
