@@ -7,21 +7,28 @@ from collections import defaultdict
 import numpy as np
 
 """
+Log info from Training
+- writing data out to csv
+"""
+def logData(train_rewards, train_success, eval_rewards, eval_steps):
+    pass
+
+"""
 Turning Minigrid's observation into dict key
 """
-def observation_to_state(observation):
+def observationToState(observation):
     image = observation["image"]
-    dir = int(observation["dir"])
+    dir = int(observation["direction"])
     obs_key = (image.tobytes(), image.shape, dir)
     return obs_key
 
-def choose_action(q_table, state, epsilon, action_count, rng):
+def chooseAction(q_table, state, epsilon, action_count, rng):
     if rng.random() < epsilon:
         return int(rng.integers(action_count))
         
     return int(np.argmax(q_table[state]))
 
-def train(episodes=8000, alpha=0.1, gamma=0.95, epislon_start=1.0,
+def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
           epsilon_end=0.05, seed=7):
     """
     When training, don't use the env random grid generator to generate a new
@@ -41,7 +48,7 @@ def train(episodes=8000, alpha=0.1, gamma=0.95, epislon_start=1.0,
     for episode in range(episodes):
         # resetting/initializing environemnt for new training episode
         observation, _ = env.reset(seed=seed)
-        state = observation_to_state(observation)
+        state = observationToState(observation)
         eps_rew = 0.0
         terminated = False
         truncated = False
@@ -50,9 +57,9 @@ def train(episodes=8000, alpha=0.1, gamma=0.95, epislon_start=1.0,
         epsilon = epislon_start + frac * (epsilon_end - epislon_start)
 
         while not (terminated or truncated):
-            action = choose_action(q_table, state, epsilon, env.action_space.n, rng)
+            action = chooseAction(q_table, state, epsilon, env.action_space.n, rng)
             next_obs, reward, terminated, truncated, _ = env.step(action)
-            next_state = observation_to_state(next_obs)
+            next_state = observationToState(next_obs)
 
             # Q-learning update
             next_val = 0.0 if terminated else np.max(q_table[next_state])
@@ -69,7 +76,33 @@ def train(episodes=8000, alpha=0.1, gamma=0.95, epislon_start=1.0,
     return q_table
 
 def evaluate(q_table, episodes=20, render=False, seed=7):
-    pass
+    env = LunarRoverEnv()
+    rng = np.random.default_rng(seed)
+    epsilon = 0
+    tot_rewards = []
+    tot_steps = []
+
+    for episode in range(episodes):
+        steps = 0
+        terminated = False
+        truncated = False
+        observation, _ = env.reset(seed=seed)
+        state = observationToState(observation)
+        eps_rew = 0
+
+        while not (terminated or  truncated):
+            # next action
+            action = chooseAction(q_table, state, 0, env.action_space.n, rng)
+            next_obs, reward, terminated, truncated, _ = env.step(action)
+            next_state = observationToState(next_obs)
+            eps_rew += reward
+            state = next_state
+            steps += 1
+
+        tot_rewards.append(eps_rew)
+        tot_steps.append(tot_steps)
+
+    return tot_rewards, tot_steps
 
 if __name__ == "__main__":
     q_table = train() 
