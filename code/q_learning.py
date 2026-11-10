@@ -68,10 +68,6 @@ def train(episodes=8000, alpha=0.1, gamma=0.95, epislon_start=1.0,
     env.close()
     return q_table
 
-            
-
-    return q_table
-
 def evaluate(q_table, episodes=20, render=False, seed=7):
     pass
 
