@@ -21,36 +21,37 @@ def logData(train_rewards:list, train_steps:list, train_success:list,
     os.makedirs(dir, exist_ok=True) # skips creation if already exist
 
     header = ['episodes',
-              'score',
-              'training successes',
+              'Successful Run',
               'training rewards',
               'training steps',]
 
-    episodes = list(range(len(train_rewards)-1)) # creating a episodes list with vals 0 -- len(train_rewards)-1
+    episodes = list(range(len(train_rewards))) # creating a episodes list with vals 0 -- len(train_rewards)-1
     results = zip_longest(episodes, train_success, train_rewards, train_steps)
 
     # write out training results
     with open(output, "w") as f:
         writer = csv.writer(f)
         writer.writerow(header)
-        writer.writerow(results)
+        for row in results:
+            writer.writerow(row)
 
     bn, type = os.path.splitext(output)
     output_eval = f"{bn}_evaluation{type}"
 
     # write out eval results
     header = ['episodes',
-              'evaluation rewards',
-              'evaluation successes',
-              'evaluation steps']
+              'Successful Run',
+              'Evaluation Rewards',
+              'Evaluation Steps']
             
-    episodes = list(range(len(eval_rewards)-1)) # creating a episodes list with vals 0 -- len(train_rewards)-1
+    episodes = list(range(len(eval_rewards))) # creating a episodes list with vals 0 -- len(train_rewards)-1
     results = zip_longest(episodes, eval_success, eval_rewards, eval_steps)
 
     with open(output_eval, "w") as f:
         writer = csv.writer(f)
         writer.writerow(header)
-        writer.writerow(results)
+        for row in results:
+            writer.writerow(row)
 
     return
 
@@ -113,7 +114,7 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
             eps_rew += reward
             steps += 1
 
-        rewards.append(eps_rew)
+        rewards.append(round(eps_rew, 3))
         success.append(int(terminated))
         tot_steps.append(steps)
 
@@ -122,9 +123,9 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
 
 def evaluate(q_table, episodes=20, render=False, seed=7):
     if render:
-        env = LunarRoverEnv(render_mode="human")
+        env = LunarRoverEnv(movement_failure_probability=0.15, render_mode="human")
     else:
-        env = LunarRoverEnv()
+        env = LunarRoverEnv(movement_failure_probability=0.15)
 
     rng = np.random.default_rng(seed)
     epsilon = 0
@@ -151,8 +152,8 @@ def evaluate(q_table, episodes=20, render=False, seed=7):
             state = next_state
             steps += 1
 
-        tot_rewards.append(eps_rew)
-        tot_steps.append(tot_steps)
+        tot_rewards.append(round(eps_rew, 3))
+        tot_steps.append(steps)
         tot_successes.append(int(terminated))
 
     env.close()
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     args = p.parse_args()
     if min(args.episodes, args.eval_episodes) < 1:
         p.error('episode arguments must positive')
-    if min(args.epsilon_start, args.epsilon_end, args.alpha, args.gamma) < 1:
+    if min(args.epsilon_start, args.epsilon_end, args.alpha, args.gamma) < 0:
         p.error('epsilon and gamma arguments must be positive')
 
     # create q_table implementing q-learning
