@@ -53,6 +53,7 @@ class LunarRoverEnv(MiniGridEnv):
             mission_space=MissionSpace(mission_func=lambda: "Explore the lunar surface and reach the beacon."),
             grid_size=size,
             max_steps=max_steps,
+            agent_view_size=3,
             see_through_walls=False,
             render_mode=render_mode,
             highlight=True,
@@ -78,7 +79,7 @@ class LunarRoverEnv(MiniGridEnv):
         while True:
             selected = self.np_random.choice(len(valid_cells), size=obstacle_count, replace=False)
             obstacle_positions = {valid_cells[index] for index in selected}
-            if self._path_exists(obstacle_positions):
+            if self._pathExists(obstacle_positions):
                 break
 
         for position in obstacle_positions:
@@ -89,7 +90,7 @@ class LunarRoverEnv(MiniGridEnv):
         self.agent_dir = 0
         self.mission = "Explore the lunar surface and reach the beacon."
 
-    def _path_exists(self, obstacle_positions):
+    def _pathExists(self, obstacle_positions):
         """Breadth-first search used only to guarantee map generation is fair."""
         frontier = deque([self.start_pos])
         visited = {self.start_pos}
@@ -110,7 +111,7 @@ class LunarRoverEnv(MiniGridEnv):
                     frontier.append(next_pos)
         return False
 
-    def _sensor_cells(self):
+    def _sensorCells(self):
         """Cells in a local radius count as newly revealed terrain."""
         x0, y0 = self.agent_pos
         visible = set()
@@ -122,7 +123,7 @@ class LunarRoverEnv(MiniGridEnv):
 
     def reset(self, *, seed=None, options=None):
         observation, info = super().reset(seed=seed, options=options)
-        self.discovered_cells = self._sensor_cells()
+        self.discovered_cells = self._sensorCells()
         info["discovered_cells"] = len(self.discovered_cells)
         return observation, info
 
@@ -150,7 +151,7 @@ class LunarRoverEnv(MiniGridEnv):
         else:
             self.agent_pos = candidate
 
-        newly_discovered = self._sensor_cells() - self.discovered_cells
+        newly_discovered = self._sensorCells() - self.discovered_cells
         self.discovered_cells.update(newly_discovered)
         reward += 0.02 * len(newly_discovered)  # information-gain reward
 
