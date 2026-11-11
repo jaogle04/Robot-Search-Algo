@@ -98,13 +98,17 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
     env.close()
     return q_table, rewards, success, tot_steps
 
-def evaluate(q_table, episodes=20, render=False, seed=7):
+def evaluate(q_table, episodes=20, render=False, seed=None):
     if render:
         env = LunarRoverEnv(movement_failure_probability=0.15, render_mode="human")
     else:
         env = LunarRoverEnv(movement_failure_probability=0.15)
 
-    rng = np.random.default_rng(seed)
+    if seed == None:
+        rng = np.random.default_rng()
+    else: 
+        rng = np.random.default_rng(seed)
+
     epsilon = 0
     tot_rewards = []
     tot_successes = []
@@ -145,6 +149,7 @@ if __name__ == "__main__":
     p.add_argument('--alpha', type=float, default=0.1)
     p.add_argument('--gamma', type=float, default=0.95)
     p.add_argument('--seed', type=int, default=7)
+    p.add_argument('--render-eval', type=str, default=True)
     p.add_argument('--output', type=str, default='./results/run.csv') # output directory for data
     
     args = p.parse_args()
@@ -152,6 +157,9 @@ if __name__ == "__main__":
         p.error('episode arguments must positive')
     if min(args.epsilon_start, args.epsilon_end, args.alpha, args.gamma) < 0:
         p.error('epsilon and gamma arguments must be positive')
+    if args.render_eval.lower() in ('false', 'no', 'F', 'N'):
+        rend = False
+    else: rend = True 
 
     # create q_table implementing q-learning
     q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
@@ -159,7 +167,8 @@ if __name__ == "__main__":
                                                                  args.epsilon_end, args.seed) 
 
     # evaluated the resulting table
-    eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes, render=True, seed=args.seed)
+    eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes,
+                                                        render=rend)
 
     # logging data from run
     logData(train_rewards, train_steps, train_successes, eval_rewards, eval_steps, eval_successes, args.output)
