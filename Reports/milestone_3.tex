@@ -6,7 +6,15 @@
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{placeins}
+\usepackage{hyperref} 
 \renewcommand{\thesubsection}{\thesection.\alph{subsection}}
+
+\hypersetup{
+    colorlinks=true,
+    urlcolor=blue,       % Controls the color of \href and \url links
+    linkcolor=black,     % Controls internal links (sections, figures, tables)
+    citecolor=green      % Controls bibliography citations
+}
 
 %-------------- TITLE -----------------%
 \author{James Ogle}
@@ -17,6 +25,9 @@
     \pagenumbering{gobble}
     \maketitle
     \pagenumbering{arabic}
+    \begin{center}
+        \href{https://github.com/jaogle04/Robot-Search-Algo/tree/master}{Robot Search Algorithm Github Repository}
+    \end{center}
 
     %-----------------------------------------%
     \section*{Project Progress}
