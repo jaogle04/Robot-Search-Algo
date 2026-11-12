@@ -1,6 +1,4 @@
-/Reports/Proposal/PDF
-/Reports/Proposal/build
-/Reports/PDF
+/Reports/PDF/*.gz
 /Reports/build
 /Milestone 2_ Environment Setup.pdf
 /ogle_james_milestone2.zip
