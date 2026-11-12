@@ -1,20 +1,90 @@
 #!/bin/bash
+set -e
 
-# Run agent with default parameters except for rendering video output
-python code/run_agent.py --episodes 1000 --eval-episodes 100 --epsilon-start 1.0 \
-    --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
-    --render-eval N --random-seed Y --output ./results/run.csv
+# Run the full test suite from creating baseline, implementing Q-learning, to evaluating the results
+full_run() {
+    # Random policy baseline
+    python code/run_agent.py --episodes 1000 --eval-episodes 100 --random-policy Y \
+        --random-policy Y \
+        --render-eval N \
+        --output ./results/random_policy_run.csv
 
-# Run default except for generating new grid on each new episode for evaluation (--random-seed)
-python code/run_agent.py --episodes 1000 --eval-episodes 500 --epsilon-start 1.0 \
-    --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
-    --render-eval N --random-seed Y --output ./results/random_run.csv
+    # Run agent with default parameters except for rendering video output
+    python code/run_agent.py --episodes 1000 --eval-episodes 100 --epsilon-start 1.0 \
+        --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
+        --render-eval N --random-seed Y --output ./results/run.csv
 
-# Gathering results from both runs
-python code/analyze_results.py --input-file ./results/run.csv \
-    --output-file ./results/run \
-    --window 100
+    # Run default except for generating new grid on each new episode for evaluation (--random-seed)
+    python code/run_agent.py --episodes 1000 --eval-episodes 500 --epsilon-start 1.0 \
+        --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
+        --render-eval N --random-seed Y --output ./results/random_run.csv
 
-python code/analyze_results.py --input-file ./results/random_run.csv \
-    --output-file ./results/random_run \
-    --window 100
+    # Gathering results from both runs
+    python code/analyze_results.py --input-file ./results/run.csv \
+        --output-file ./results/run \
+        --window 100
+
+    python code/analyze_results.py --input-file ./results/random_run.csv \
+        --output-file ./results/random_run \
+        --window 100
+
+    python code/analyze_results.py --input-file ./results/random_policy_run_evaluation.csv \
+        --rand-policy Y \
+        --output-file ./results/random_policy_results \
+        --window 100
+}
+
+# Only analyze results, note must have data generated and match file names properly for this to work
+analyze() {
+    python code/analyze_results.py --input-file ./results/run.csv \
+        --output-file ./results/run \
+        --window 100
+
+    python code/analyze_results.py --input-file ./results/random_run.csv \
+        --output-file ./results/random_run \
+        --window 100
+
+    python code/analyze_results.py --input-file ./results/random_policy_run_evaluation.csv \
+        --rand-policy Y \
+        --output-file ./results/random_policy_results \
+        --window 100
+}
+
+# Will just create baseline results
+random_policy() {
+    python code/run_agent.py --episodes 1000 --eval-episodes 100 --random-policy Y \
+        --render-eval N \
+        --output ./results/random_policy_run.csv
+
+    python code/analyze_results.py --input-file ./results/random_policy_run_evaluation.csv \
+        --rand-policy Y \
+        --render-eval N \
+        --output-file ./results/random_policy_results \
+        --window 100
+}
+
+analyze_policy() {
+    python code/analyze_results.py --input-file ./results/random_policy_run_evaluation.csv \
+        --rand-policy Y \
+        --output-file ./results/random_policy_results \
+        --window 100
+}
+
+case "$1" in
+    full_run)
+        full_run
+        ;;
+    analyze)
+        analyze
+        ;;
+    random_policy)
+        random_policy
+        ;;
+    analyze_policy)
+        analyze_policy
+        ;;
+    *)
+        echo "Usage: $0 {full_run|analyze|random_policy}"
+        exit 1
+        ;;
+esac
