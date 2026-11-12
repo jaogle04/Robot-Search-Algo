@@ -163,10 +163,10 @@ if __name__ == "__main__":
         p.error('episode arguments must positive')
     if min(args.epsilon_start, args.epsilon_end, args.alpha, args.gamma) < 0:
         p.error('epsilon and gamma arguments must be positive')
-    if args.random_seed.lower() in ('Y'):
+    if args.random_seed in ('Y'):
         eval_seed = None
     else: eval_seed = args.seed
-    if args.render_eval.lower() in ('false', 'no', 'F', 'N'):
+    if args.render_eval in ('False', 'No', 'F', 'N'):
         rend = False
     else: rend = True 
 
