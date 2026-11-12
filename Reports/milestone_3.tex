@@ -1,0 +1,50 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+%\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{placeins}
+\renewcommand{\thesubsection}{\thesection.\alph{subsection}}
+
+%-------------- TITLE -----------------%
+\author{James Ogle}
+\title{ECE414 -- Milestone 3}
+
+%---------- START DOCUMENT ------------%
+\begin{document}
+    \pagenumbering{gobble}
+    \maketitle
+    \pagenumbering{arabic}
+    \section*{Project Progress}
+    \begin{itemize}
+        \item The focus during this section of the project has been focused developing the Q-learning algorithm for create a Q-table for the agent.
+        After Q-learning was developed, the next part of the process of analyzing the results to confirm the agent was able to "learn" in the environment and improves its actions.
+        \item No major changes have been made to the environment.
+        The only change implemented into the environment was the viewable-space by the agent, changed from 5x5 to 3x3 grid space in front.
+        \item The next focus will be implementing a way for the agent to operate consistently well on grids it has not seen before.
+        Currently, it is able to learn and be 100\% accurate the grid it was trained on which does not mean anything for the real world.
+    \end{itemize}
+    \section*{RL Algorithm Implementation}
+    \begin{itemize}
+        \item \textbf{Algorithm:} Q-learning is the algorithm implemented to train the agent.
+        \item \textbf{Reason:} I chose Q-learning since it learns strictly from the policy.
+        This means in ideal sense, it should aim for choosing the most optimal route.
+        Since the environment I have setup does not have meaning hazards to account for, the potential of Q-learning causing rover to fail catastrophically in unseen grids seemed unlikely.
+        \item \textbf{Action Selection:} The agent uses an epsilon-greedy action-selection policy.
+        With probability $\epsilon$, it selects one of the four movement actions randomly to explore the environment.
+        Otherwise, it selects the action with the largest current Q-value for the observed state.
+        During training, $\epsilon$ gradually decreases so the rover explores more at the beginning and relies more on learned actions later. 
+        \item \textbf{Learning:} The agent uses tabular Q-learning to update its Q-value estimates after every action.
+        After receiving reward $r$ and observing the next state $s'$, it updates the value for the selected state-action pair using
+            \[
+            Q(s,a) \leftarrow Q(s,a) + \alpha \left[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\right].
+            \]
+        Here, $\alpha$ is the learning rate and $\gamma$ is the discount factor.
+        The algorithm directly updates Q-values rather than a separate policy table; the policy improves indirectly because the agent chooses the action with the highest Q-value in each state.
+    \end{itemize}
+    \section*{Training Process}
+    \section*{Initial Results \& Baseline}
+    \section*{Next Steps}
+\end{document}
