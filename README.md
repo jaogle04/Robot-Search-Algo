@@ -60,3 +60,14 @@ Arguments:
 - `--rand-policy` is `(Y/N)` input telling the program to only run on dataset since random policy run only produces one csv unlike a Q-learning run
 - `--output-file` will be the basename for the resulting plot pngs (do not need to include `.png` at the end)
 - `--window` is an integer value used for moving average that cleans up the training data plot
+
+### Example Execution Steps
+```
+python code/run_agent.py --episodes 1000 --eval-episodes 50 --epsilon-start 1.0 \
+    --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
+    --render-eval N --random-seed N --output ./results/run.csv
+
+python code/analyze_results.py --input-file ./results/run.csv \
+    --output-file ./results/run \
+    --window 100
+```
