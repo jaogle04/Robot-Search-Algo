@@ -28,10 +28,11 @@
     \end{itemize}
     \section*{RL Algorithm Implementation}
     \begin{itemize}
-        \item \textbf{Algorithm:} Q-learning is the algorithm implemented to train the agent.
+        \item \textbf{Algorithm:} Q-learning with linear epsilon decay is the algorithm implemented to train the agent.
         \item \textbf{Reason:} I chose Q-learning since it learns strictly from the policy.
         This means in ideal sense, it should aim for choosing the most optimal route.
         Since the environment I have setup does not have meaning hazards to account for, the potential of Q-learning causing rover to fail catastrophically in unseen grids seemed unlikely.
+        However, in order to make sure the agent explores, I implemented linear decay so the agent would explore more in the earlier episodes and becoming more greedy in the later episodes.
         \item \textbf{Action Selection:} The agent uses an epsilon-greedy action-selection policy.
         With probability $\epsilon$, it selects one of the four movement actions randomly to explore the environment.
         Otherwise, it selects the action with the largest current Q-value for the observed state.
@@ -43,11 +44,41 @@
         Here, $\alpha$ is the learning rate and $\gamma$ is the discount factor.
         The algorithm directly updates Q-values rather than a separate policy table; the policy improves indirectly because the agent chooses the action with the highest Q-value in each state.
     \end{itemize}
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[scale=0.20]{./img/rl_algo.png}
+        \caption{Code implementation for Reinforcement Learning Algorithm Q-learning}
+    \end{figure}
+    
+    \FloatBarrier
+
     \section*{Training Process}
+    \begin{itemize}
+        \item Algorithm implemented for the training process is Q-learning with linear decay for the epsilon
+        \item Parameters used for the algorithm are epsilon start and end, episodes (these 3 are for calculating epsilon decay), discount factor (gamma), and learning rate (alpha) 
+        \item The agents Q-values are updated through: 
+            \[
+            Q(s,a) \leftarrow Q(s,a) + \alpha \left[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\right].
+            \]
+    \end{itemize}
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[scale=0.15]{./img/train_code.png}
+        \caption{Code for training the RL agent}
+    \end{figure}
+
+    \FloatBarrier
+
     The rover is trained using tabular Q-learning, which updates Q-values that estimate the long-term reward of each action in a given state. At the start of each episode, the environment resets and provides the rover with an initial partial observation.
     The rover converts this observation into a state and uses an epsilon-greedy policy to select one of four movement actions.
     After each action, the environment returns the next observation, reward, and episode status, which the agent uses to update the Q-value for its previous state-action pair.
+    In order to update the Q-value, the training process includes epsilon, learning rate, and discount factor into the Q-value update equation.
     This cycle continues until the rover reaches the goal or the episode reaches the maximum step limit. 
     \section*{Initial Results \& Baseline}
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[scale=0.5]{./img/run_train.png}
+        \caption{Training Result of 1000 episodes; top graph is reward per episode and bottom is steps per episode}
+    \end{figure}
     \section*{Next Steps}
 \end{document}
