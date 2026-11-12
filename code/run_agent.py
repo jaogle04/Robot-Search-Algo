@@ -5,27 +5,31 @@ from q_learning import *
 Log info from Training
 - writing data out to csv
 """
-def logData(train_rewards:list, train_steps:list, train_success:list,
-            eval_rewards:list, eval_steps:list, eval_success:list, output:str):
+def logData(train_rewards:list | None=None, train_steps:list | None=None,
+            train_success:list | None=None, eval_rewards:list | None=None,
+            eval_steps:list | None=None, eval_success:list | None=None, output:str | None=None):
 
     # creating directory to store results in-case it does not exist
     dir = os.path.dirname(output)
     os.makedirs(dir, exist_ok=True) # skips creation if already exist
 
-    header = ['episodes',
-              'Successful Run',
-              'training rewards',
-              'training steps',]
+    # No training was performed on data being logged
+    if train_rewards is not None:
+        print("Saving Training results...")
+        header = ['episodes',
+                  'Successful Run',
+                  'training rewards',
+                  'training steps',]
 
-    episodes = list(range(len(train_rewards))) # creating a episodes list with vals 0 -- len(train_rewards)-1
-    results = zip_longest(episodes, train_success, train_rewards, train_steps)
+        episodes = list(range(len(train_rewards))) # creating a episodes list with vals 0 -- len(train_rewards)-1
+        results = zip_longest(episodes, train_success, train_rewards, train_steps)
 
-    # write out training results
-    with open(output, "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        for row in results:
-            writer.writerow(row)
+        # write out training results
+        with open(output, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            for row in results:
+                writer.writerow(row)
 
     bn, type = os.path.splitext(output)
     output_eval = f"{bn}_evaluation{type}"
@@ -227,10 +231,12 @@ if __name__ == "__main__":
     else: rend = True 
 
     if rand_policy:
+        print("Running random policy")
         rewards, success, steps = random_policy(args.episodes, rend, seed=None)
-        #logData(rewards, steps, success)
+        logData(None, None, None, rewards, steps, success, args.output)
 
     else:
+        print("Q-learning training process")
         # create q_table implementing q-learning
         q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
                                                                      args.gamma, args.epsilon_start,
@@ -239,4 +245,6 @@ if __name__ == "__main__":
         # evaluated the resulting table
         eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes,
                                                             render=rend, seed=eval_seed)
-        logData(train_rewards, train_steps, train_successes, eval_rewards, eval_steps, eval_successes, args.output)
+        logData(train_rewards, train_steps, train_successes,
+                eval_rewards, eval_steps,
+                eval_successes, args.output)
