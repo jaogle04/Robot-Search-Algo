@@ -47,8 +47,53 @@ def logData(train_rewards:list, train_steps:list, train_success:list,
 
     return
 
+"""
+Separate from training, just performs random policy evaluation
+"""
+def random_policy(episodes=500, render=False, seed=None):
+    if render:
+        env = LunarRoverEnv(movement_failure_probability=0.15, render_mode="human")
+    else:
+        env = LunarRoverEnv(movement_failure_probability=0.15)
 
+    if seed == None:
+        rng = np.random.default_rng()
+    else: 
+        rng = np.random.default_rng(seed)
 
+    tot_rewards = []
+    tot_successes = []
+    tot_steps = []
+
+    for episode in range(episodes):
+        steps = 0
+        terminated = False
+        truncated = False
+        # not using seed here to see how it performs
+        # across different grids
+        observation, _ = env.reset(seed=seed) 
+        state = observationToState(observation)
+        eps_rew = 0
+
+        while not (terminated or  truncated):
+            # next action
+            action = env.action_space.sample()
+            next_obs, reward, terminated, truncated, _ = env.step(action)
+            next_state = observationToState(next_obs)
+            eps_rew += reward
+            state = next_state
+            steps += 1
+
+        tot_rewards.append(round(eps_rew, 3))
+        tot_steps.append(steps)
+        tot_successes.append(int(terminated))
+
+    env.close()
+    return tot_rewards, tot_successes,tot_steps
+
+"""
+Training agent implementing Q-learning with linear decay
+"""
 def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
           epsilon_end=0.05, seed=7):
     """
@@ -61,6 +106,8 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
 
     # create q_table number of entries based off total number of possible actions
     # in the environment
+
+    # if update_policy is False, implement random baseline policy
     q_table = createQTable(env.action_space.n)
     rng = np.random.default_rng(seed)
     success = []
@@ -80,6 +127,7 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
 
         while not (terminated or truncated):
             action = chooseAction(q_table, state, epsilon, env.action_space.n, rng)
+
             next_obs, reward, terminated, truncated, _ = env.step(action)
             next_state = observationToState(next_obs)
 
@@ -98,6 +146,9 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
     env.close()
     return q_table, rewards, success, tot_steps
 
+"""
+Evaluation performed after running training process
+"""
 def evaluate(q_table, episodes=20, render=False, seed=None):
     if render:
         env = LunarRoverEnv(movement_failure_probability=0.15, render_mode="human")
@@ -145,6 +196,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument('--episodes', type=int, default=1000)
     p.add_argument('--eval-episodes', type=int, default=20)
+    p.add_argument('--random-policy', type=str, default='N')
     p.add_argument('--epsilon-start', type=float, default=1.0)
     p.add_argument('--epsilon-end', type=float, default=0.05)
     p.add_argument('--alpha', type=float, default=0.1)
@@ -163,6 +215,10 @@ if __name__ == "__main__":
         p.error('episode arguments must positive')
     if min(args.epsilon_start, args.epsilon_end, args.alpha, args.gamma) < 0:
         p.error('epsilon and gamma arguments must be positive')
+    if args.random_policy in ('Y'):
+        rand_policy = True
+    else:
+        rand_policy = False 
     if args.random_seed in ('Y'):
         eval_seed = None
     else: eval_seed = args.seed
@@ -170,13 +226,17 @@ if __name__ == "__main__":
         rend = False
     else: rend = True 
 
+    if rand_policy:
+        rewards, success, steps = random_policy(args.episodes, rend, seed=None)
+        #logData(rewards, steps, success)
 
-    # create q_table implementing q-learning
-    q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
-                                                                 args.gamma, args.epsilon_start,
-                                                                 args.epsilon_end, args.seed) 
+    else:
+        # create q_table implementing q-learning
+        q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
+                                                                     args.gamma, args.epsilon_start,
+                                                                     args.epsilon_end, args.seed) 
 
-    # evaluated the resulting table
-    eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes,
-                                                        render=rend, seed=eval_seed)
-    logData(train_rewards, train_steps, train_successes, eval_rewards, eval_steps, eval_successes, args.output)
+        # evaluated the resulting table
+        eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes,
+                                                            render=rend, seed=eval_seed)
+        logData(train_rewards, train_steps, train_successes, eval_rewards, eval_steps, eval_successes, args.output)
