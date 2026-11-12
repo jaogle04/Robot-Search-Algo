@@ -36,8 +36,7 @@
         With probability $\epsilon$, it selects one of the four movement actions randomly to explore the environment.
         Otherwise, it selects the action with the largest current Q-value for the observed state.
         During training, $\epsilon$ gradually decreases so the rover explores more at the beginning and relies more on learned actions later. 
-        \item \textbf{Learning:} The agent uses tabular Q-learning to update its Q-value estimates after every action.
-        After receiving reward $r$ and observing the next state $s'$, it updates the value for the selected state-action pair using
+        \item \textbf{Learning:}
             \[
             Q(s,a) \leftarrow Q(s,a) + \alpha \left[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\right].
             \]
@@ -45,6 +44,10 @@
         The algorithm directly updates Q-values rather than a separate policy table; the policy improves indirectly because the agent chooses the action with the highest Q-value in each state.
     \end{itemize}
     \section*{Training Process}
+    The agent is trained through a combination of Q-learning, learning rate, and discount factor all applied when updating values in the policy table.
+    During each episode, the agent repeatedly observes the environment, selects an action, receives a reward and next observation, and updates the Q-value associated with its previous state-action pair.
+    Training ends for an episode when the rover reaches the goal or when the environment reaches its maximum allowed number of steps (eg. 150).
+    At the beginning of each episode, the environment is reset and returns the rover's initial partial observation. The agent converts this observation into a state representation and uses epsilon-greedy selection to choose one of the four movement actions. Then returns the next observation, reward, termination status, and transition information. The agent uses the reward and next state to update its Q-value estimate, then repeats this interaction until the rover reaches the goal or the episode is truncated. 
     \section*{Initial Results \& Baseline}
     \section*{Next Steps}
 \end{document}
