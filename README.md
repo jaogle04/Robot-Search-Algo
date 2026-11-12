@@ -6,26 +6,16 @@ pip -r install requirements.txt
 ```
 
 ## Execute Instructions
-- For setting up steps, access `lunar_rover_env.py` and change the `STEPS` variable inside `main()`
-```python
-if __name__ == "__main__":
-    env = LunarRoverEnv(render_mode="human")
-    observation, info = env.reset(seed=7)
-    STEPS = 500     # -> change this to preferred step count for test
-    print("Observation keys:", observation.keys())
-    print("Initial info:", info)
-
-    for _ in range(STEPS):
-        action = env.action_space.sample()
-        observation, reward, terminated, truncated, info = env.step(action)
-        print(f"action={action}, reward={reward:.2f}, info={info}")
-        if terminated or truncated:
-            observation, info = env.reset()
-
-    env.close()
+- shell script for running training and evaluating results
+```bash
+./run_script
 ```
+- this will run the training produced results from the agent interacting in the environment as well as analyze the results
 
-- To run the program:
+- If you want to execute through the python script:
+```shell
+python code/run_agent.py --episodes 1000 --eval-episodes 50 --epsilon-start 1.0 \
+    --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
+    --render-eval N --random-seed N --output ./results/run.csv
 ```
-python code/lunar_rover_env.py
-```
+>[!NOTE] The parameters shown here are the default parameters set in the python script and would result in the same outcome if no input arguments were applied
