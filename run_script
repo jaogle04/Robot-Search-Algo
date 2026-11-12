@@ -1,3 +1,20 @@
 #!/bin/bash
 
-python code/q_learning.py 
+# Run agent with default parameters except for rendering video output
+python code/run_agent.py --episodes 1000 --eval-episodes 100 --epsilon-start 1.0 \
+    --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
+    --render-eval N --random-seed Y --output ./results/run.csv
+
+# Run default except for generating new grid on each new episode for evaluation (--random-seed)
+python code/run_agent.py --episodes 1000 --eval-episodes 500 --epsilon-start 1.0 \
+    --epsilon-end 0.05 --alpha 0.1 --gamma 0.95 --seed=7 \
+    --render-eval N --random-seed Y --output ./results/random_run.csv
+
+# Gathering results from both runs
+python code/analyze_results.py --input-file ./results/run.csv \
+    --output-file ./results/run \
+    --window 100
+
+python code/analyze_results.py --input-file ./results/random_run.csv \
+    --output-file ./results/random_run \
+    --window 100
