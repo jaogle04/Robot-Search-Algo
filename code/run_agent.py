@@ -141,6 +141,7 @@ def evaluate(q_table, episodes=20, render=False, seed=None):
     return tot_rewards, tot_successes,tot_steps
 
 if __name__ == "__main__":
+    # Allowed inputs for user to allow different hyperparameters for training
     p = argparse.ArgumentParser()
     p.add_argument('--episodes', type=int, default=1000)
     p.add_argument('--eval-episodes', type=int, default=20)
@@ -149,17 +150,26 @@ if __name__ == "__main__":
     p.add_argument('--alpha', type=float, default=0.1)
     p.add_argument('--gamma', type=float, default=0.95)
     p.add_argument('--seed', type=int, default=7)
+    p.add_argument('--random-seed',
+                   help='random grid generation for each episode run on evaluation step (Y/N)',
+                   type=str, default='N')
     p.add_argument('--render-eval', type=str, default=True)
     p.add_argument('--output', type=str, default='./results/run.csv') # output directory for data
     
     args = p.parse_args()
+
+    # Check argument inputs
     if min(args.episodes, args.eval_episodes) < 1:
         p.error('episode arguments must positive')
     if min(args.epsilon_start, args.epsilon_end, args.alpha, args.gamma) < 0:
         p.error('epsilon and gamma arguments must be positive')
+    if args.random_seed.lower() in ('Y'):
+        eval_seed = None
+    else: seed = args.seed
     if args.render_eval.lower() in ('false', 'no', 'F', 'N'):
         rend = False
     else: rend = True 
+
 
     # create q_table implementing q-learning
     q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
@@ -168,7 +178,5 @@ if __name__ == "__main__":
 
     # evaluated the resulting table
     eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes,
-                                                        render=rend)
-
-    # logging data from run
+                                                        render=rend, seed=eval_seed)
     logData(train_rewards, train_steps, train_successes, eval_rewards, eval_steps, eval_successes, args.output)
