@@ -47,9 +47,8 @@ def plotData(episodes, rewards, steps, window, output, type_data):
     axes[1].set_ylabel('Steps')
     axes[1].grid(True)
 
-    plt.title(f'{fig_title} Results')
+    fig.suptitle(f'{fig_title} Results')
     plt.grid(True, alpha=0.3)
-    plt.legend()
     plt.tight_layout()
     plt.savefig(f'{output}.png', dpi=300, bbox_inches='tight')
     plt.close()    
