@@ -84,7 +84,7 @@ case "$1" in
         analyze_policy
         ;;
     *)
-        echo "Usage: $0 {full_run|analyze|random_policy}"
+        echo "Usage: $0 {full_run|analyze|random_policy|analyze_policy}"
         exit 1
         ;;
 esac
