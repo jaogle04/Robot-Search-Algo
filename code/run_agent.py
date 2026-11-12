@@ -165,7 +165,7 @@ if __name__ == "__main__":
         p.error('epsilon and gamma arguments must be positive')
     if args.random_seed.lower() in ('Y'):
         eval_seed = None
-    else: seed = args.seed
+    else: eval_seed = args.seed
     if args.render_eval.lower() in ('false', 'no', 'F', 'N'):
         rend = False
     else: rend = True 
