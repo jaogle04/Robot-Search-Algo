@@ -44,10 +44,10 @@
         The algorithm directly updates Q-values rather than a separate policy table; the policy improves indirectly because the agent chooses the action with the highest Q-value in each state.
     \end{itemize}
     \section*{Training Process}
-    The agent is trained through a combination of Q-learning, learning rate, and discount factor all applied when updating values in the policy table.
-    During each episode, the agent repeatedly observes the environment, selects an action, receives a reward and next observation, and updates the Q-value associated with its previous state-action pair.
-    Training ends for an episode when the rover reaches the goal or when the environment reaches its maximum allowed number of steps (eg. 150).
-    At the beginning of each episode, the environment is reset and returns the rover's initial partial observation. The agent converts this observation into a state representation and uses epsilon-greedy selection to choose one of the four movement actions. Then returns the next observation, reward, termination status, and transition information. The agent uses the reward and next state to update its Q-value estimate, then repeats this interaction until the rover reaches the goal or the episode is truncated. 
+    The rover is trained using tabular Q-learning, which updates Q-values that estimate the long-term reward of each action in a given state. At the start of each episode, the environment resets and provides the rover with an initial partial observation.
+    The rover converts this observation into a state and uses an epsilon-greedy policy to select one of four movement actions.
+    After each action, the environment returns the next observation, reward, and episode status, which the agent uses to update the Q-value for its previous state-action pair.
+    This cycle continues until the rover reaches the goal or the episode reaches the maximum step limit. 
     \section*{Initial Results \& Baseline}
     \section*{Next Steps}
 \end{document}
