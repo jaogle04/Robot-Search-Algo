@@ -15,13 +15,7 @@ def movingAvg(values, window):
     window = min(window, len(values))
     return np.convolve(values, np.ones(window) / window, mode='valid')
 
-def plotData(episodes, rewards, steps, window, output, type_data):
-    if type_data == 'train':
-        # smoothing training data
-        fig_title = 'Training'
-    else:
-        fig_title = 'Evaluation'
-
+def plotData(episodes, rewards, steps, window, output, fig_title):
     rewards = movingAvg(rewards, window)
     steps = movingAvg(steps, window)
     episodes = episodes[window - 1 :]
@@ -53,64 +47,61 @@ def plotData(episodes, rewards, steps, window, output, type_data):
     plt.savefig(f'{output}.png', dpi=300, bbox_inches='tight')
     plt.close()    
 
+def grabData(filename):
+    epi, success, rewards, steps = [], [], [], []
+    with open(filename, 'r') as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        for row in reader:
+            epi.append(int(row[0]))
+            success.append(int(row[1]))
+            rewards.append(float(row[2]))
+            steps.append(float(row[3]))
+
+    epi = np.asarray(epi)
+    success = np.asarray(success)
+    rewards = np.asarray(rewards)
+    steps = np.asarray(steps)
+    return epi, success, rewards, steps
 
 if __name__ == '__main__':
-    train_eps       = []
-    train_rewards   = []
-    train_steps     = []
-    train_success   = []
-    eval_eps        = []
-    eval_rewards    = []
-    eval_steps      = []
-    eval_success    = []
-
     p = argparse.ArgumentParser()
     p.add_argument('--input-file', type=str, default='./results/run.csv')
+    p.add_argument('--rand-policy',
+                   help='Mark (Y/N) if data being analyzed is from random policy run',
+                   type=str,
+                   default='N')
     p.add_argument('--output-file', type=str, default='./results/run')
     p.add_argument('--window', type=int, default=100)
     args = p.parse_args()
 
-    train_file = args.input_file
-    bn, type = os.path.splitext(train_file)
-    eval_file = f'{bn}_evaluation{type}'
+    if args.rand_policy == 'Y':
+        rand_policy = True
+    else:
+        rand_policy = False
 
-    # grabbing train data for plotting
-    with open(train_file, 'r') as f:
-        reader = csv.reader(f)
-        header = next(reader)
-        for row in reader:
-            train_eps.append(int(row[0]))
-            train_success.append(int(row[1]))
-            train_rewards.append(float(row[2]))
-            train_steps.append(float(row[3]))
-
-    train_eps = np.asarray(train_eps)
-    train_success = np.asarray(train_success)
-    train_rewards = np.asarray(train_rewards)
-    train_steps = np.asarray(train_steps)
-
-    # grabbing eval data
-    with open(eval_file, 'r') as f:
-        reader = csv.reader(f)
-        header = next(reader)
-        for row in reader:
-            eval_eps.append(int(row[0]))
-            eval_success.append(int(row[1]))
-            eval_rewards.append(float(row[2]))
-            eval_steps.append(float(row[3]))
-
-    eval_eps = np.asarray(eval_eps)
-    eval_success = np.asarray(eval_success)
-    eval_rewards = np.asarray(eval_rewards)
-    eval_steps = np.asarray(eval_steps)
+    print(f'Random Policy Analyzing results: {args.rand_policy}')
+    if not rand_policy:
+        print("not random policy")
+        train_file = args.input_file
+        bn, type = os.path.splitext(train_file)
+        eval_file = f'{bn}_evaluation{type}'
+        # grabbing train data for plotting
+        train_eps, train_success, train_rewards, train_steps = grabData(train_file)
+        # grabbing eval data
+        eval_eps, eval_success, eval_rewards, eval_steps = grabData(eval_file)
     
-    train_out = f'{args.output_file}_train'
-    eval_out  = f'{args.output_file}_eval'
+        train_out = f'{args.output_file}_train'
+        eval_out  = f'{args.output_file}_eval'
         
+        plotData(train_eps, train_rewards, train_steps, args.window,train_out, fig_title='Training')
 
-    plotData(train_eps, train_rewards, train_steps, args.window,train_out, type_data="train")
-
-    #eval_window = min(args.window, len(eval_rewards))
-    eval_window = math.ceil(len(eval_rewards)/15)
-    eval_window = 30
-    plotData(eval_eps, eval_rewards, eval_steps, eval_window, eval_out, type_data="eval")
+        #eval_window = min(args.window, len(eval_rewards))
+        eval_window = math.ceil(len(eval_rewards)/15)
+        eval_window = 30
+        plotData(eval_eps, eval_rewards, eval_steps, eval_window, eval_out, fig_title='Evaluation')
+    else:
+        file = args.input_file
+        eps, success, rewards, steps = grabData(file)
+        out_file = f'{args.output_file}_eval'
+        plotData(eps, rewards, steps, args.window, out_file, fig_title='Random Policy')

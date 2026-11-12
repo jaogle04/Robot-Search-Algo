@@ -1,10 +1,10 @@
 from lunar_rover_env import LunarRoverEnv
 from q_learning import *
 
-"""
+'''
 Log info from Training
 - writing data out to csv
-"""
+'''
 def logData(train_rewards:list | None=None, train_steps:list | None=None,
             train_success:list | None=None, eval_rewards:list | None=None,
             eval_steps:list | None=None, eval_success:list | None=None, output:str | None=None):
@@ -15,7 +15,7 @@ def logData(train_rewards:list | None=None, train_steps:list | None=None,
 
     # No training was performed on data being logged
     if train_rewards is not None:
-        print("Saving Training results...")
+        print('Saving Training results...')
         header = ['episodes',
                   'Successful Run',
                   'training rewards',
@@ -25,14 +25,14 @@ def logData(train_rewards:list | None=None, train_steps:list | None=None,
         results = zip_longest(episodes, train_success, train_rewards, train_steps)
 
         # write out training results
-        with open(output, "w") as f:
+        with open(output, 'w') as f:
             writer = csv.writer(f)
             writer.writerow(header)
             for row in results:
                 writer.writerow(row)
 
     bn, type = os.path.splitext(output)
-    output_eval = f"{bn}_evaluation{type}"
+    output_eval = f'{bn}_evaluation{type}'
 
     # write out eval results
     header = ['episodes',
@@ -43,7 +43,7 @@ def logData(train_rewards:list | None=None, train_steps:list | None=None,
     episodes = list(range(len(eval_rewards))) # creating a episodes list with vals 0 -- len(train_rewards)-1
     results = zip_longest(episodes, eval_success, eval_rewards, eval_steps)
 
-    with open(output_eval, "w") as f:
+    with open(output_eval, 'w') as f:
         writer = csv.writer(f)
         writer.writerow(header)
         for row in results:
@@ -51,12 +51,12 @@ def logData(train_rewards:list | None=None, train_steps:list | None=None,
 
     return
 
-"""
+'''
 Separate from training, just performs random policy evaluation
-"""
+'''
 def random_policy(episodes=500, render=False, seed=None):
     if render:
-        env = LunarRoverEnv(movement_failure_probability=0.15, render_mode="human")
+        env = LunarRoverEnv(movement_failure_probability=0.15, render_mode='human')
     else:
         env = LunarRoverEnv(movement_failure_probability=0.15)
 
@@ -95,16 +95,16 @@ def random_policy(episodes=500, render=False, seed=None):
     env.close()
     return tot_rewards, tot_successes,tot_steps
 
-"""
+'''
 Training agent implementing Q-learning with linear decay
-"""
+'''
 def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
           epsilon_end=0.05, seed=7):
-    """
+    '''
     When training, don't use the env random grid generator to generate a new
     grid each episode. Seed will make sure the grid map stays the same during
     the training process.
-    """
+    '''
     # declare the environment
     env = LunarRoverEnv(movement_failure_probability=0.15)
 
@@ -150,12 +150,12 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
     env.close()
     return q_table, rewards, success, tot_steps
 
-"""
+'''
 Evaluation performed after running training process
-"""
+'''
 def evaluate(q_table, episodes=20, render=False, seed=None):
     if render:
-        env = LunarRoverEnv(movement_failure_probability=0.15, render_mode="human")
+        env = LunarRoverEnv(movement_failure_probability=0.15, render_mode='human')
     else:
         env = LunarRoverEnv(movement_failure_probability=0.15)
 
@@ -195,7 +195,7 @@ def evaluate(q_table, episodes=20, render=False, seed=None):
     env.close()
     return tot_rewards, tot_successes,tot_steps
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Allowed inputs for user to allow different hyperparameters for training
     p = argparse.ArgumentParser()
     p.add_argument('--episodes', type=int, default=1000)
@@ -231,12 +231,14 @@ if __name__ == "__main__":
     else: rend = True 
 
     if rand_policy:
-        print("Running random policy")
-        rewards, success, steps = random_policy(args.episodes, rend, seed=None)
+        print('Running random policy')
+        print(f'Seed used for run: {args.seed}')
+        rewards, success, steps = random_policy(args.episodes, rend, seed=args.seed)
         logData(None, None, None, rewards, steps, success, args.output)
 
     else:
-        print("Q-learning training process")
+        print('Q-learning training process')
+        print(f'Seed used for training run: {args.seed}')
         # create q_table implementing q-learning
         q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
                                                                      args.gamma, args.epsilon_start,
