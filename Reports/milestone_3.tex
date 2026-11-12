@@ -17,6 +17,8 @@
     \pagenumbering{gobble}
     \maketitle
     \pagenumbering{arabic}
+
+    %-----------------------------------------%
     \section*{Project Progress}
     \begin{itemize}
         \item The focus during this section of the project has been focused developing the Q-learning algorithm for create a Q-table for the agent.
@@ -26,6 +28,8 @@
         \item The next focus will be implementing a way for the agent to operate consistently well on grids it has not seen before.
         Currently, it is able to learn and be 100\% accurate the grid it was trained on which does not mean anything for the real world.
     \end{itemize}
+
+    %-----------------------------------------%
     \section*{RL Algorithm Implementation}
     \begin{itemize}
         \item \textbf{Algorithm:} Q-learning with linear epsilon decay is the algorithm implemented to train the agent.
@@ -52,6 +56,7 @@
     
     \FloatBarrier
 
+    %-----------------------------------------%
     \section*{Training Process}
     \begin{itemize}
         \item Algorithm implemented for the training process is Q-learning with linear decay for the epsilon
@@ -74,11 +79,39 @@
     After each action, the environment returns the next observation, reward, and episode status, which the agent uses to update the Q-value for its previous state-action pair.
     In order to update the Q-value, the training process includes epsilon, learning rate, and discount factor into the Q-value update equation.
     This cycle continues until the rover reaches the goal or the episode reaches the maximum step limit. 
+
+    %-----------------------------------------%
     \section*{Initial Results \& Baseline}
+    \begin{itemize}
+        \item The agent is able to achieve a reward value of 1.54 and 19 steps per an episode after training. However this is only when using the same grid for the evaluation.
+        When the grid changes on each episode randomly, then the agent will fail or succeed at random.
+        \item The agent is improving during training which can be seen in the graphs below where the rewards per episode increases as the number of episodes increases.
+        This can also be seen in the steps as well where the number of steps is decreasing over time.
+        The steps decreasing is one of the goals of the agent since it means it is taking less steps per an episode in order to find the goal (aka, it is finding a quicker path each time).
+        \item Currently, the evaluation metrics being used to measure the agent's progress are the number of steps and total reward value per an episode.
+        With the introduction of new environments for the agent each episode, I will introduce a success rate metric to capture how many successful runs it has.
+        I found this metric not to be helpful currently since the agent has 100\% success rate during the evaluation but collapses to around 50\% when new grids are introduced.
+    \end{itemize}
     \begin{figure}[!ht]
         \centering
         \includegraphics[scale=0.5]{./img/run_train.png}
         \caption{Training Result of 1000 episodes; top graph is reward per episode and bottom is steps per episode}
     \end{figure}
+    \begin{figure}[!ht]
+        \centering
+        \includegraphics[scale=0.5]{./img/random_policy_results_eval.png}
+        \caption{Result of implementing random policy for the agent and running it for 1000 episodes on the same grid}
+    \end{figure}
+
+    \FloatBarrier
+    For figure 3, this displays how when implementing Q-learning with linear-decay, the agent improves over each episode.
+    This can be seen by rewards increasing to 1.54 and the steps decreasing to 19 steps. Figure 4 represents the baseline of how the agent performs on the same grid for 1000 episodes.
+    This shows through the training process, we are able to train an agent to discover the end goal of a grid.
+    A demonstration video of the agent traversing the grid after training is in the zip file listed as \texttt{demonstration\_milestone3.mp4 }
+    %-----------------------------------------%
     \section*{Next Steps}
+    Current problems in the reinforcement agent involves the agent performing well in grids it was not trained on.
+    This can be seen when a seed is not used inside the environment during evaluation, meaning a new grid is generated during each episode.
+    The agent can sometimes find a path to the main objective, though it will not always be the shortest path.
+    A goal for improving the model will be for the agent to achieve 90\% accuracy or greater during the evaluation loop with new grids being generated every episode. 
 \end{document}
