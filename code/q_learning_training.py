@@ -96,9 +96,9 @@ def random_policy(episodes=500, render=False, seed=None):
     return tot_rewards, tot_successes,tot_steps
 
 '''
-Training agent implementing Q-learning with linear decay
+Q-learning training agent implementing linear epsilon decay
 '''
-def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
+def train_q_learning(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
           epsilon_end=0.05, seed=7):
     '''
     When training, don't use the env random grid generator to generate a new
@@ -151,9 +151,9 @@ def train(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
     return q_table, rewards, success, tot_steps
 
 '''
-Evaluation performed after running training process
+Q-learning evaluation performed after the training process
 '''
-def evaluate(q_table, episodes=20, render=False, seed=None):
+def evaluate_q_learning(q_table, episodes=20, render=False, seed=None):
     if render:
         env = LunarRoverEnv(movement_failure_probability=0.15, render_mode='human')
     else:
@@ -240,12 +240,12 @@ if __name__ == '__main__':
         print('Q-learning training process')
         print(f'Seed used for training run: {args.seed}')
         # create q_table implementing q-learning
-        q_table, train_rewards, train_successes, train_steps = train(args.episodes, args.alpha,
+        q_table, train_rewards, train_successes, train_steps = train_q_learning(args.episodes, args.alpha,
                                                                      args.gamma, args.epsilon_start,
                                                                      args.epsilon_end, args.seed) 
 
         # evaluated the resulting table
-        eval_rewards, eval_successes, eval_steps = evaluate(q_table, args.eval_episodes,
+        eval_rewards, eval_successes, eval_steps = evaluate_q_learning(q_table, args.eval_episodes,
                                                             render=rend, seed=eval_seed)
         logData(train_rewards, train_steps, train_successes,
                 eval_rewards, eval_steps,
