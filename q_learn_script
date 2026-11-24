@@ -63,7 +63,7 @@ random_policy() {
         --window 100
 }
 
-analyze_policy() {
+analyze-policy() {
     python code/analyze_results.py --input-file ./results/random_policy_run_evaluation.csv \
         --rand-policy Y \
         --output-file ./results/random_policy_results \
@@ -77,14 +77,14 @@ case "$1" in
     analyze)
         analyze
         ;;
-    random_policy)
-        random_policy
+    random-policy)
+        random-policy
         ;;
-    analyze_policy)
-        analyze_policy
+    analyze-policy)
+        analyze-policy
         ;;
     *)
-        echo "Usage: $0 {full_run|analyze|random_policy|analyze_policy}"
+        echo "Usage: $0 {full_run|analyze|random_policy|analyze-policy}"
         exit 1
         ;;
 esac

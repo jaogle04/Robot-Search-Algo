@@ -1,0 +1,44 @@
+#!/bin/bash
+
+run() {
+    python code/dqn_training.py \
+        --episodes 1000  \
+        --eval-episodes 200 \
+        --batch-size 128 \
+        --random-seed Y \
+        --output ./results/dqn.csv 
+
+    python code/analyze_results.py \
+        --input-file ./results/dqn.csv \
+        --output-file ./results/dqn \
+        --window 100
+
+    python code/test_dqn.py
+}
+
+analyze() {
+    python code/analyze_results.py \
+        --input-file ./results/dqn.csv \
+        --output-file ./results/dqn \
+        --window 100
+}
+
+test() {
+    python code/test_dqn.py
+}
+
+case "$1" in
+    run)
+        run
+        ;;
+    analyze)
+        analyze
+        ;;
+    test)
+        test
+        ;;
+    *)
+        echo "Usage: $0 {run|analyze|test}"
+        exit 1
+        ;;
+esac
