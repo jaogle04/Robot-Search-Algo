@@ -1,7 +1,7 @@
 import argparse
-import csv
 import os
 import random
+from tqdm.auto import tqdm
 
 import numpy as np
 import torch
@@ -44,17 +44,18 @@ def train(
     batch_size=128,
     memory_capacity=10000,
     target_update_frequency=100,
-    seed=7,
+    torch_seed=7,
+    eps_seed=None,
 ):
     '''
     Initializing and preparing the environemnt
     '''
     env = LunarRoverEnv(movement_failure_probability=0.15)
-    rng = random.Random(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+    rng = random.Random(torch_seed)
+    np.random.seed(torch_seed)
+    torch.manual_seed(torch_seed)
 
-    observation, _ = env.reset(seed=seed)
+    observation, _ = env.reset(seed=eps_seed)
     initial_state = observationToTensor(observation).to(device)
     n_observations = initial_state.numel()
     n_actions = env.action_space.n
@@ -78,100 +79,128 @@ def train(
     '''
     Optimization loop
     '''
-    for episode in range(episodes):
-        observation, _ = env.reset(seed=seed)
-        state = observationToTensor(observation).to(device)
-        epsilon = epsilonDecay(
-            epsilon_end,
-            epsilon_start,
-            episodes,
-            episode,
-        )
+    with tqdm(range(episodes), desc='Training', unit='episode', dynamic_ncols=True) as progress:
+        for episode in progress:
+            observation, _ = env.reset(seed=seed)
+            state = observationToTensor(observation).to(device)
+            epsilon = epsilonDecay(
+                epsilon_end,
+                epsilon_start,
+                episodes,
+                episode,
+            )
 
-        episode_reward = 0.0
-        episode_steps = 0
-        terminated = False
-        truncated = False
+            episode_reward = 0.0
+            episode_steps = 0
+            terminated = False
+            truncated = False
 
-        while not (terminated or truncated):
-            if rng.random() < epsilon:
-                action = rng.randrange(n_actions)
-            else:
-                with torch.no_grad():
-                    action = int(policy_net(state.unsqueeze(0)).argmax(dim=1).item())
+            while not (terminated or truncated):
+                if rng.random() < epsilon:
+                    action = rng.randrange(n_actions)
+                else:
+                    with torch.no_grad():
+                        state = state.to(device)
+                        action = int(policy_net(state.unsqueeze(0)).argmax(dim=1).item())
 
-            next_observation, reward, terminated, truncated, _ = env.step(action)
-            next_state = None if terminated else observationToTensor(next_observation)
-
-            '''
-            Storing the transition decision into memory for later
-            '''
-            memory.push(state, action, next_state, reward)
-            state = next_state
-            episode_reward += reward
-            episode_steps += 1
-
-            if len(memory) >= batch_size:
-                '''
-                Here we are grabbing a sample from our list of previous transitions 
-                '''
-                transitions = memory.sample(batch_size) 
-
-                batch_states = torch.stack(
-                        [transition.state for transition in transitions]
-                        ).to(device)
-                batch_actions = torch.tensor(
-                    [transition.action for transition in transitions],
-                    dtype=torch.long,
-                    device=device,
-                ).unsqueeze(1)
-                batch_rewards = torch.tensor(
-                    [transition.reward for transition in transitions],
-                    dtype=torch.float32,
-                    device=device,
+                next_observation, reward, terminated, truncated, _ = env.step(action)
+                next_state = (
+                    None
+                    if terminated or truncated
+                    else observationToTensor(next_observation).to(device)
                 )
 
-                non_terminal_mask = torch.tensor(
-                    [transition.next_state is not None for transition in transitions],
-                    dtype=torch.bool,
-                    device=device,
-                )
-                non_terminal_states = torch.stack(
-                    [
-                        transition.next_state
+                '''
+                Storing the transition decision into memory for later
+                '''
+                memory.push(state, action, next_state, reward)
+                state = next_state
+                episode_reward += reward
+                episode_steps += 1
+
+                if len(memory) >= batch_size:
+                    '''
+                    Here we are grabbing a sample from our list of previous transitions 
+                    '''
+                    transitions = memory.sample(batch_size) 
+                    batch_states = torch.stack(
+                        [transition.state.to(device) for transition in transitions]
+                    )
+                    batch_actions = torch.tensor(
+                        [transition.action for transition in transitions],
+                        dtype=torch.long,
+                        device=device,
+                    ).unsqueeze(1)
+                    batch_rewards = torch.tensor(
+                        [transition.reward for transition in transitions],
+                        dtype=torch.float32,
+                        device=device,
+                    )
+
+                    non_terminal_mask = torch.tensor(
+                        [transition.next_state is not None for transition in transitions],
+                        dtype=torch.bool,
+                        device=device,
+                    )
+
+                    non_terminal_transitions = [
+                        transition
                         for transition in transitions
                         if transition.next_state is not None
                     ]
-                ).to(device)
 
-                state_action_values = policy_net(batch_states).gather(1, batch_actions).squeeze(1)
-                next_state_values = torch.zeros(batch_size, device=device)
-                if non_terminal_states.shape[0] > 0:
-                    with torch.no_grad():
-                        next_state_values[non_terminal_mask] = (
-                            target_net(non_terminal_states).max(dim=1).values
+                    next_state_values = torch.zeros(batch_size, device=device)
+
+                    if non_terminal_transitions:
+                        non_terminal_states = torch.stack(
+                            [
+                                transition.next_state.to(device)
+                                for transition in non_terminal_transitions
+                            ]
                         )
 
-                expected_state_action_values = (
-                    batch_rewards + gamma * next_state_values
-                )
-                loss = F.smooth_l1_loss(
-                    state_action_values,
-                    expected_state_action_values,
-                )
+                        with torch.no_grad():
+                            next_state_values[non_terminal_mask] = target_net(
+                                non_terminal_states
+                            ).max(dim=1).values
 
-                optimizer.zero_grad()
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 10)
-                optimizer.step()
+                    state_action_values = policy_net(batch_states).gather(1, batch_actions).squeeze(1)
+                    next_state_values = torch.zeros(batch_size, device=device)
+                    if non_terminal_states.shape[0] > 0:
+                        with torch.no_grad():
+                            next_state_values[non_terminal_mask] = (
+                                target_net(non_terminal_states).max(dim=1).values
+                            )
 
-                optimization_steps += 1
-                if optimization_steps % target_update_frequency == 0:
-                    target_net.load_state_dict(policy_net.state_dict())
+                    expected_state_action_values = (
+                        batch_rewards + gamma * next_state_values
+                    )
+                    loss = F.smooth_l1_loss(
+                        state_action_values,
+                        expected_state_action_values,
+                    )
 
-        rewards.append(round(episode_reward, 3))
-        successes.append(int(terminated))
-        steps.append(episode_steps)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 10)
+                    optimizer.step()
+
+                    optimization_steps += 1
+                    if optimization_steps % target_update_frequency == 0:
+                        target_net.load_state_dict(policy_net.state_dict())
+
+            rewards.append(round(episode_reward, 3))
+            successes.append(int(terminated))
+            steps.append(episode_steps)
+
+            '''
+            updating tqdm to track progress in train loop
+            '''
+            progress.set_postfix(
+                reward=f"{episode_reward:.2f}",
+                success=f"{sum(successes)}/{len(successes)}",
+                epsilon=f"{epsilon:.3f}",
+            )
 
     env.close()
     return policy_net, rewards, successes, steps
@@ -195,28 +224,37 @@ def evaluate(device, policy_net, episodes=20, render=False, seed=None):
     tot_successes = []
     tot_steps = []
 
-    for _ in range(episodes):
-        observation, _ = env.reset(seed=seed)
-        state = observationToTensor(observation).to(device)
-        episode_reward = 0.0
-        episode_steps = 0
-        terminated = False
-        truncated = False
+    with tqdm(range(episodes), desc='Evaluation', unit='episode', dynamic_ncols=True) as progress:
+        for _ in progress:
+            observation, _ = env.reset(seed=seed)
+            state = observationToTensor(observation).to(device)
+            episode_reward = 0.0
+            episode_steps = 0
+            terminated = False
+            truncated = False
 
-        with torch.no_grad():
-            while not (terminated or truncated):
-                action = int(
-                    policy_net(state.unsqueeze(0)).argmax(dim=1).item()
-                )
-                next_observation, reward, terminated, truncated, _ = env.step(action)
-                episode_reward += reward
-                episode_steps += 1
-                if not (terminated or truncated):
-                    state = observationToTensor(next_observation).to(device)
+            with torch.no_grad():
+                while not (terminated or truncated):
+                    action = int(
+                        policy_net(state.unsqueeze(0)).argmax(dim=1).item()
+                    )
+                    next_observation, reward, terminated, truncated, _ = env.step(action)
+                    episode_reward += reward
+                    episode_steps += 1
+                    if not (terminated or truncated):
+                        state = observationToTensor(next_observation).to(device)
 
-        tot_rewards.append(round(episode_reward, 3))
-        tot_successes.append(int(terminated))
-        tot_steps.append(episode_steps)
+            tot_rewards.append(round(episode_reward, 3))
+            tot_successes.append(int(terminated))
+            tot_steps.append(episode_steps)
+
+            '''
+            updating tqdm to track progress in train loop
+            '''
+            progress.set_postfix(
+                reward=f"{episode_reward:.2f}",
+                success=f"{sum(tot_successes)}/{len(tot_successes)}",
+            )
 
     env.close()
     return tot_rewards, tot_successes, tot_steps
@@ -289,6 +327,7 @@ if __name__ == "__main__":
     if args.batch_size < 1 or args.memory_capacity < 1:
         parser.error("batch size and memory capacity must be positive")
 
+    '''Determining if using cuda or not'''
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
@@ -296,6 +335,9 @@ if __name__ == "__main__":
     else:
         device = torch.device("cpu")
 
+    print(f"Device: {device}")
+
+    seed = None if args.random_seed == "Y" else args.seed
     policy_net, train_rewards, train_successes, train_steps = train(
         device,
         episodes=args.episodes,
@@ -306,17 +348,18 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         memory_capacity=args.memory_capacity,
         target_update_frequency=args.target_update_frequency,
-        seed=args.seed,
+        torch_seed = args.seed,
+        eps_seed=seed,
     )
 
     savePolicy(policy_net, args.model_output)
 
-    eval_seed = None if args.random_seed == "Y" else args.seed
     eval_rewards, eval_successes, eval_steps = evaluate(
+        device,
         policy_net,
         episodes=args.eval_episodes,
         render=args.render_eval == "Y",
-        seed=eval_seed,
+        seed=seed,
     )
     logData(
         train_rewards,

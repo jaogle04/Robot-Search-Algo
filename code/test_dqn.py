@@ -1,5 +1,5 @@
 '''Run a saved DQN policy in a small number of rendered evaluation episodes.'''
-
+import torch
 import argparse
 
 from dqn_training import evaluate, loadPolicy
@@ -19,8 +19,11 @@ def main():
     if args.episodes < 1:
         parser.error('--episodes must be positive')
 
-    policy_net = loadPolicy(args.model)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    policy_net = loadPolicy(args.model, device=device)
     rewards, successes, steps = evaluate(
+        device,
         policy_net,
         episodes=args.episodes,
         render=True,

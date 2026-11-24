@@ -1,19 +1,27 @@
 #!/bin/bash
 
 run() {
+    echo "Starting training"
     python code/dqn_training.py \
-        --episodes 1000  \
+        --episodes 5000  \
         --eval-episodes 200 \
         --batch-size 128 \
         --random-seed Y \
         --output ./results/dqn.csv 
+
+    echo "Finished training and Evaluation"
+    echo "Now analyzing results"
 
     python code/analyze_results.py \
         --input-file ./results/dqn.csv \
         --output-file ./results/dqn \
         --window 100
 
-    python code/test_dqn.py
+    echo "Analyzing results complete"
+
+    echo "Running test"
+    python code/test_dqn.py \
+    --episodes 10
 }
 
 analyze() {
@@ -24,7 +32,8 @@ analyze() {
 }
 
 test() {
-    python code/test_dqn.py
+    python code/test_dqn.py \
+    --episodes 10
 }
 
 case "$1" in
