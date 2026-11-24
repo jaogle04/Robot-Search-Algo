@@ -126,6 +126,8 @@ def train(
                     batch_states = torch.stack(
                         [transition.state.to(device) for transition in transitions]
                     )
+
+                    '''Grabbing the set of actions and rewards based off transitions sampled'''
                     batch_actions = torch.tensor(
                         [transition.action for transition in transitions],
                         dtype=torch.long,
@@ -149,6 +151,7 @@ def train(
                         if transition.next_state is not None
                     ]
 
+                    '''Initializing next state'''
                     next_state_values = torch.zeros(batch_size, device=device)
 
                     if non_terminal_transitions:
@@ -164,6 +167,9 @@ def train(
                                 non_terminal_states
                             ).max(dim=1).values
 
+                    '''
+                    Grabbin next action
+                    '''
                     state_action_values = policy_net(batch_states).gather(1, batch_actions).squeeze(1)
                     next_state_values = torch.zeros(batch_size, device=device)
                     if non_terminal_states.shape[0] > 0:
@@ -175,11 +181,14 @@ def train(
                     expected_state_action_values = (
                         batch_rewards + gamma * next_state_values
                     )
+
+                    '''determining loss'''
                     loss = F.smooth_l1_loss(
                         state_action_values,
                         expected_state_action_values,
                     )
 
+                    '''determining optimization'''
                     optimizer.zero_grad()
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 10)
