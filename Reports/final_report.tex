@@ -37,7 +37,13 @@
         \item The main achievement of the project is the agent on averaging achieving 70\% to 80\% accuracy when running in a test environment (each episode per the test would involve generating a completely new random grid).
     \end{itemize}
     
-    \textbf{Include Image of Environment Here}
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[scale=0.25]{./img/env_code.png}
+        \caption{Agent configuration for the environment}
+    \end{figure}
+
+    \FloatBarrier
 
     %-----------------------------------------%
     \section*{Final Implementation}
@@ -56,7 +62,11 @@
         I tried to originally stay away from this due to how expensive training is, and the models being much larger than a traditional policy model.
     \end{itemize}
 
-    \textbf{Include Image of Code Here}
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[scale=0.25]{./img/storing_transitions.png}
+        \caption{Storing and using transitions during training code section}
+    \end{figure}
 
     %-----------------------------------------%
     \section*{Experimental Setup}
@@ -72,10 +82,37 @@
     The results displayed how DQN was a major improved, jumping from around 20\% during testing to 70\%.
     While the results were not as high as I wanted, the increase in performance from only operating in grids seen to operating in unknown-grids was expected.
     
-    \textbf{INCLUDE RESULT FIGURES HERE}
-
     %-----------------------------------------%
     \section*{Final Results \& Comparisons}
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[scale=0.50]{./img/dqn_train.png}
+        \caption{DQN Training Results}
+    \end{figure}
+
+    \FloatBarrier
+
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[scale=0.50]{./img/dqn_eval.png}
+        \caption{DQN Evaluation Results}
+    \end{figure}
+
+    \begin{table}[htbp]
+        \centering
+        \begin{tabular}{lcc}
+            \hline
+            \textbf{Metric} & \textbf{DQN} & \textbf{Q-learning} \\
+            \hline
+            Episodes & 10 & 10 \\
+            Successful episodes & -/10 (80\%) & 9/10 (90\%) \\
+            Average reward & - & 0.218 \\
+            Average steps per episode & - & 41.7 \\
+            \hline
+        \end{tabular}
+        \caption{Comparison of DQN and Q-learning test results.}
+        \label{tab:test-results-comparison}
+    \end{table}
 
     %-----------------------------------------%
     \section*{Discussions \& Limitations}
