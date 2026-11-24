@@ -31,12 +31,48 @@
 
     %-----------------------------------------%
     \section*{Project Overview}
+    \begin{itemize}
+        \item My project focuses on solving the issue of path-finding for lunar rovers in new environments.        
+        \item The environment my agent operate
+        \item The main achievement of the project is the agent on averaging achieving 70\% to 80\% accuracy when running in a test environment (each episode per the test would involve generating a completely new random grid).
+    \end{itemize}
+    
+    \textbf{Include Image of Environment Here}
 
     %-----------------------------------------%
     \section*{Final Implementation}
+    \begin{itemize}
+        \item \textbf{Environment:} The environment I developed was a 2-d grid environment where the action space for agent was up, down, left, or right. \textit{(Now talk about reward values)}
+        \item \textbf{Algorithm:} The algorithm implemented for the final results was a Deep Q-Network.
+        This algorithm was chosen due to the first algorithm implemented Q-learning.
+        While Q-learning performed well on known, repeated grids, it struggled when being trained and evaluated on grids never seen before.
+        Since DQN introduces not only memory buffers for remembering previous transitions but as well as introducing non-linear functionality.
+        I believed that this would provide better stabilization when trying to train a model on one grid and perform well under evaluation in a different grid.
+        \item \textbf{Technical Challenges:} Currently, I am still facing challenges in the agent performing well during the evaluation process and on reducing the number of training episodes for the DQN model.
+        The overall goal would be for the model to achieve high 80\% to low 90\% accuracy during evaluation and testing.
+        This goal, however, was not able to be met during this milestone.
+        \item \textbf{Changes:} The major change from the original proposal was the choice of the algorithm.
+        After scoring poorly on newly generated environments using basic Q-learning, I decided I would have to change my approach to using a Deep Neural Network model.
+        I tried to originally stay away from this due to how expensive training is, and the models being much larger than a traditional policy model.
+    \end{itemize}
+
+    \textbf{Include Image of Code Here}
 
     %-----------------------------------------%
     \section*{Experimental Setup}
+    The evaluation of the agent was accomplished through gathering number of steps per episode, reward per episode, and total number of successes (finding end state).
+    By combining all of these data points, I was able to produce plots that displayed how well or poorly the agent was learning during the training process.
+    I was also able to gain insight if it was overfitting based off the evaluation results as well.
+    After training and evaluation, I ran the saved model through a separate python script starting with `test`.
+    These files are treated as 'real-world' environments and render a video output of the agents performing in the environemnt.
+    This produced results related to number of successful episodes, average reward per episode, and average number of steps per an episode.
+    For baseline comparisons, rather than doing just a random policy, I instead implemented my traditional Q-learning algorithm to train the agent where each episode during the training generated a new grid.
+    This was different from how Q-learning was implemented before (previously trained on the same grid for each episode).
+    I chose to do this since it would match with how I was currently training the agent while using the DQN algorithm.
+    The results displayed how DQN was a major improved, jumping from around 20\% during testing to 70\%.
+    While the results were not as high as I wanted, the increase in performance from only operating in grids seen to operating in unknown-grids was expected.
+    
+    \textbf{INCLUDE RESULT FIGURES HERE}
 
     %-----------------------------------------%
     \section*{Final Results \& Comparisons}
@@ -46,4 +82,5 @@
 
     %-----------------------------------------%
     \section*{Conclusion}
+
 \end{document}
