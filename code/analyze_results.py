@@ -4,6 +4,57 @@ import os
 import csv
 import numpy as np
 import math
+from itertools import zip_longest
+
+'''
+Log info from Training
+- writing data out to csv
+'''
+def logData(train_rewards:list | None=None, train_steps:list | None=None,
+            train_success:list | None=None, eval_rewards:list | None=None,
+            eval_steps:list | None=None, eval_success:list | None=None, output:str | None=None):
+
+    # creating directory to store results in-case it does not exist
+    dir = os.path.dirname(output)
+    os.makedirs(dir, exist_ok=True) # skips creation if already exist
+
+    # No training was performed on data being logged
+    if train_rewards is not None:
+        print('Saving Training results...')
+        header = ['episodes',
+                  'Successful Run',
+                  'training rewards',
+                  'training steps',]
+
+        episodes = list(range(len(train_rewards))) # creating a episodes list with vals 0 -- len(train_rewards)-1
+        results = zip_longest(episodes, train_success, train_rewards, train_steps)
+
+        # write out training results
+        with open(output, 'w') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            for row in results:
+                writer.writerow(row)
+
+    bn, type = os.path.splitext(output)
+    output_eval = f'{bn}_evaluation{type}'
+
+    # write out eval results
+    header = ['episodes',
+              'Successful Run',
+              'Evaluation Rewards',
+              'Evaluation Steps']
+            
+    episodes = list(range(len(eval_rewards))) # creating a episodes list with vals 0 -- len(train_rewards)-1
+    results = zip_longest(episodes, eval_success, eval_rewards, eval_steps)
+
+    with open(output_eval, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        for row in results:
+            writer.writerow(row)
+
+    return
 
 """
 Smoooths the results for training to make graph more readable

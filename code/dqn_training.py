@@ -8,10 +8,17 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
+from q_learning import epsilonDecay
+from analyze_results import logData
 from dqn import DQN, ReplayMemory
 from lunar_rover_env import LunarRoverEnv
 
 
+'''
+@name observationToTensor 
+@brief Converts the current observation dict inside minigrid to a tensor
+for the pytorch library
+'''
 def observationToTensor(observation):
     """Convert a MiniGrid observation into a flat, normalized DQN input."""
     image = np.asarray(observation["image"], dtype=np.float32)
@@ -23,13 +30,10 @@ def observationToTensor(observation):
     )
 
 
-def linearEpsilon(start, end, total_episodes, episode):
-    if total_episodes <= 1:
-        return end
-    fraction = episode / (total_episodes - 1)
-    return start + fraction * (end - start)
-
-
+'''
+@name train
+@brief Trains a DQN RL model to train the agent to travel through new grids
+'''
 def train(
     episodes=500,
     gamma=0.95,
@@ -41,6 +45,9 @@ def train(
     target_update_frequency=100,
     seed=7,
 ):
+    '''
+    Initializing and preparing the environemnt
+    '''
     env = LunarRoverEnv(movement_failure_probability=0.15)
     rng = random.Random(seed)
     np.random.seed(seed)
@@ -51,6 +58,9 @@ def train(
     n_observations = initial_state.numel()
     n_actions = env.action_space.n
 
+    '''
+    Setting up the DQN 
+    '''
     policy_net = DQN(n_observations, n_actions)
     target_net = DQN(n_observations, n_actions)
     target_net.load_state_dict(policy_net.state_dict())
@@ -64,12 +74,15 @@ def train(
     steps = []
     optimization_steps = 0
 
+    '''
+    Optimization loop
+    '''
     for episode in range(episodes):
         observation, _ = env.reset(seed=seed)
         state = observationToTensor(observation)
-        epsilon = linearEpsilon(
-            epsilon_start,
+        epsilon = epsilonDecay(
             epsilon_end,
+            epsilon_start,
             episodes,
             episode,
         )
@@ -89,13 +102,19 @@ def train(
             next_observation, reward, terminated, truncated, _ = env.step(action)
             next_state = None if terminated else observationToTensor(next_observation)
 
+            '''
+            Storing the transition decision into memory for later
+            '''
             memory.push(state, action, next_state, reward)
             state = next_state
             episode_reward += reward
             episode_steps += 1
 
             if len(memory) >= batch_size:
-                transitions = memory.sample(batch_size)
+                '''
+                Here we are grabbing a sample from our list of previous transitions 
+                '''
+                transitions = memory.sample(batch_size) 
 
                 batch_states = torch.stack([transition.state for transition in transitions])
                 batch_actions = torch.tensor(
@@ -152,6 +171,10 @@ def train(
     return policy_net, rewards, successes, steps
 
 
+'''
+@name evaluate
+@brief evaluates the policy model created during train()
+'''
 def evaluate(policy_net, episodes=20, render=False, seed=None):
     if render:
         env = LunarRoverEnv(
@@ -196,52 +219,6 @@ def evaluate(policy_net, episodes=20, render=False, seed=None):
 # Keep eval as the public loop name requested by the scaffold.
 def eval(policy_net, episodes=20, render=False, seed=None):
     return evaluate(policy_net, episodes=episodes, render=render, seed=seed)
-
-
-def logData(
-    train_rewards=None,
-    train_steps=None,
-    train_success=None,
-    eval_rewards=None,
-    eval_steps=None,
-    eval_success=None,
-    output="./results/dqn.csv",
-):
-    directory = os.path.dirname(output)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
-
-    if train_rewards is not None:
-        with open(output, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(
-                ["episodes", "Successful Run", "training rewards", "training steps"]
-            )
-            writer.writerows(
-                zip(
-                    range(len(train_rewards)),
-                    train_success,
-                    train_rewards,
-                    train_steps,
-                )
-            )
-
-    basename, extension = os.path.splitext(output)
-    eval_output = f"{basename}_evaluation{extension}"
-    with open(eval_output, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(
-            ["episodes", "Successful Run", "Evaluation Rewards", "Evaluation Steps"]
-        )
-        writer.writerows(
-            zip(
-                range(len(eval_rewards)),
-                eval_success,
-                eval_rewards,
-                eval_steps,
-            )
-        )
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
