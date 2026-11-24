@@ -35,6 +35,7 @@ def observationToTensor(observation):
 @brief Trains a DQN RL model to train the agent to travel through new grids
 '''
 def train(
+    device,
     episodes=500,
     gamma=0.95,
     epsilon_start=1.0,
@@ -54,15 +55,15 @@ def train(
     torch.manual_seed(seed)
 
     observation, _ = env.reset(seed=seed)
-    initial_state = observationToTensor(observation)
+    initial_state = observationToTensor(observation).to(device)
     n_observations = initial_state.numel()
     n_actions = env.action_space.n
 
     '''
     Setting up the DQN 
     '''
-    policy_net = DQN(n_observations, n_actions)
-    target_net = DQN(n_observations, n_actions)
+    policy_net = DQN(n_observations, n_actions).to(device)
+    target_net = DQN(n_observations, n_actions).to(device)
     target_net.load_state_dict(policy_net.state_dict())
     target_net.eval()
 
@@ -79,7 +80,7 @@ def train(
     '''
     for episode in range(episodes):
         observation, _ = env.reset(seed=seed)
-        state = observationToTensor(observation)
+        state = observationToTensor(observation).to(device)
         epsilon = epsilonDecay(
             epsilon_end,
             epsilon_start,
@@ -116,19 +117,24 @@ def train(
                 '''
                 transitions = memory.sample(batch_size) 
 
-                batch_states = torch.stack([transition.state for transition in transitions])
+                batch_states = torch.stack(
+                        [transition.state for transition in transitions]
+                        ).to(device)
                 batch_actions = torch.tensor(
                     [transition.action for transition in transitions],
                     dtype=torch.long,
+                    device=device,
                 ).unsqueeze(1)
                 batch_rewards = torch.tensor(
                     [transition.reward for transition in transitions],
                     dtype=torch.float32,
+                    device=device,
                 )
 
                 non_terminal_mask = torch.tensor(
                     [transition.next_state is not None for transition in transitions],
                     dtype=torch.bool,
+                    device=device,
                 )
                 non_terminal_states = torch.stack(
                     [
@@ -136,10 +142,10 @@ def train(
                         for transition in transitions
                         if transition.next_state is not None
                     ]
-                )
+                ).to(device)
 
                 state_action_values = policy_net(batch_states).gather(1, batch_actions).squeeze(1)
-                next_state_values = torch.zeros(batch_size)
+                next_state_values = torch.zeros(batch_size, device=device)
                 if non_terminal_states.shape[0] > 0:
                     with torch.no_grad():
                         next_state_values[non_terminal_mask] = (
@@ -175,7 +181,7 @@ def train(
 @name evaluate
 @brief evaluates the policy model created during train()
 '''
-def evaluate(policy_net, episodes=20, render=False, seed=None):
+def evaluate(device, policy_net, episodes=20, render=False, seed=None):
     if render:
         env = LunarRoverEnv(
             movement_failure_probability=0.15,
@@ -191,7 +197,7 @@ def evaluate(policy_net, episodes=20, render=False, seed=None):
 
     for _ in range(episodes):
         observation, _ = env.reset(seed=seed)
-        state = observationToTensor(observation)
+        state = observationToTensor(observation).to(device)
         episode_reward = 0.0
         episode_steps = 0
         terminated = False
@@ -206,7 +212,7 @@ def evaluate(policy_net, episodes=20, render=False, seed=None):
                 episode_reward += reward
                 episode_steps += 1
                 if not (terminated or truncated):
-                    state = observationToTensor(next_observation)
+                    state = observationToTensor(next_observation).to(device)
 
         tot_rewards.append(round(episode_reward, 3))
         tot_successes.append(int(terminated))
@@ -218,7 +224,45 @@ def evaluate(policy_net, episodes=20, render=False, seed=None):
 
 # Keep eval as the public loop name requested by the scaffold.
 def eval(policy_net, episodes=20, render=False, seed=None):
-    return evaluate(policy_net, episodes=episodes, render=render, seed=seed)
+    device = next(policy_net.parameters()).device
+    return evaluate(device, policy_net, episodes=episodes, render=render, seed=seed)
+
+
+'''
+@name savePolicy
+@brief saves and outputs the given policy produced from DQN training in a dict-style
+format so files will be able to import and use it
+'''
+def savePolicy(policy_net, output):
+    directory = os.path.dirname(output)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+    torch.save(
+        {
+            "state_dict": policy_net.state_dict(),
+            "n_observations": policy_net.layer1.in_features,
+            "n_actions": policy_net.layer3.out_features,
+        },
+        output,
+    )
+
+
+'''
+@name loadPolicy
+@brief Can be used to load in a saved policy in dict-style format to be used for testing
+after training and evaluation
+'''
+def loadPolicy(path, device="cpu"):
+    checkpoint = torch.load(path, map_location=device, weights_only=False)
+    policy_net = DQN(
+        checkpoint["n_observations"],
+        checkpoint["n_actions"],
+    ).to(device)
+    policy_net.load_state_dict(checkpoint["state_dict"])
+    policy_net.eval()
+    return policy_net
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -235,6 +279,7 @@ if __name__ == "__main__":
     parser.add_argument("--random-seed", choices=("Y", "N"), default="N")
     parser.add_argument("--render-eval", choices=("Y", "N"), default="N")
     parser.add_argument("--output", type=str, default="./results/dqn.csv")
+    parser.add_argument("--model-output", type=str, default="./models/dqn_policy.pt")
     args = parser.parse_args()
 
     if args.episodes < 1 or args.eval_episodes < 1:
@@ -244,7 +289,15 @@ if __name__ == "__main__":
     if args.batch_size < 1 or args.memory_capacity < 1:
         parser.error("batch size and memory capacity must be positive")
 
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+
     policy_net, train_rewards, train_successes, train_steps = train(
+        device,
         episodes=args.episodes,
         gamma=args.gamma,
         epsilon_start=args.epsilon_start,
@@ -255,6 +308,8 @@ if __name__ == "__main__":
         target_update_frequency=args.target_update_frequency,
         seed=args.seed,
     )
+
+    savePolicy(policy_net, args.model_output)
 
     eval_seed = None if args.random_seed == "Y" else args.seed
     eval_rewards, eval_successes, eval_steps = evaluate(
