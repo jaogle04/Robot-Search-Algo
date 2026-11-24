@@ -225,7 +225,7 @@ def evaluate(device, policy_net, episodes=20, render=False, seed=None):
     tot_steps = []
 
     with tqdm(range(episodes), desc='Evaluation', unit='episode', dynamic_ncols=True) as progress:
-        for _ in progress:
+        for episode in progress:
             observation, _ = env.reset(seed=seed)
             state = observationToTensor(observation).to(device)
             episode_reward = 0.0

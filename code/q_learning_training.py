@@ -1,6 +1,19 @@
 from lunar_rover_env import LunarRoverEnv
 from q_learning import *
 from analyze_results import logData
+from tqdm.auto import tqdm
+import pickle
+
+'''
+Save the learned policy model
+'''
+def save_q_table(q_table, path, num_actions):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "wb") as file:
+        pickle.dump(
+            {"num_actions": num_actions, "q_table": dict(q_table)},
+            file,
+        )
 
 '''
 Separate from training, just performs random policy evaluation
@@ -50,7 +63,7 @@ def random_policy(episodes=500, render=False, seed=None):
 Q-learning training agent implementing linear epsilon decay
 '''
 def train_q_learning(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
-          epsilon_end=0.05, seed=7):
+          epsilon_end=0.05, rng_seed=7, eps_seed=None):
     '''
     When training, don't use the env random grid generator to generate a new
     grid each episode. Seed will make sure the grid map stays the same during
@@ -64,39 +77,49 @@ def train_q_learning(episodes=500, alpha=0.1, gamma=0.95, epislon_start=1.0,
 
     # if update_policy is False, implement random baseline policy
     q_table = createQTable(env.action_space.n)
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(rng_seed)
     success = []
     rewards = []
     tot_steps = []
     
-    for episode in range(episodes):
-        # resetting/initializing environemnt for new training episode
-        observation, _ = env.reset(seed=seed)
-        state = observationToState(observation)
-        eps_rew = 0.0
-        steps = 0
-        terminated = False
-        truncated = False
+    with tqdm(range(episodes), desc='Training', unit='episode', dynamic_ncols=True) as progress:
+        for episode in progress:
+            # resetting/initializing environemnt for new training episode
+            observation, _ = env.reset(seed=eps_seed)
+            state = observationToState(observation)
+            eps_rew = 0.0
+            steps = 0
+            terminated = False
+            truncated = False
 
-        epsilon = epsilonDecay(epsilon_end, epislon_start, episodes,episode)
+            epsilon = epsilonDecay(epsilon_end, epislon_start, episodes, episode)
 
-        while not (terminated or truncated):
-            action = chooseAction(q_table, state, epsilon, env.action_space.n, rng)
+            while not (terminated or truncated):
+                action = chooseAction(q_table, state, epsilon, env.action_space.n, rng)
 
-            next_obs, reward, terminated, truncated, _ = env.step(action)
-            next_state = observationToState(next_obs)
+                next_obs, reward, terminated, truncated, _ = env.step(action)
+                next_state = observationToState(next_obs)
 
-            # Q-learning update
-            q_table[state][action] += updateQTable(terminated, q_table, state,
-                                                   next_state, action, reward, gamma, alpha)
+                # Q-learning update
+                q_table[state][action] += updateQTable(terminated, q_table, state,
+                                                       next_state, action, reward, gamma, alpha)
 
-            state = next_state
-            eps_rew += reward
-            steps += 1
+                state = next_state
+                eps_rew += reward
+                steps += 1
 
-        rewards.append(round(eps_rew, 3))
-        success.append(int(terminated))
-        tot_steps.append(steps)
+            rewards.append(round(eps_rew, 3))
+            success.append(int(terminated))
+            
+            tot_steps.append(steps)
+
+            '''
+            updating tqdm to track progress in train loop
+            '''
+            progress.set_postfix(
+                reward=f"{eps_rew:.2f}",
+                success=f"{sum(success)}/{len(success)}",
+            )
 
     env.close()
     return q_table, rewards, success, tot_steps
@@ -120,28 +143,37 @@ def evaluate_q_learning(q_table, episodes=20, render=False, seed=None):
     tot_successes = []
     tot_steps = []
 
-    for episode in range(episodes):
-        steps = 0
-        terminated = False
-        truncated = False
-        # not using seed here to see how it performs
-        # across different grids
-        observation, _ = env.reset(seed=seed) 
-        state = observationToState(observation)
-        eps_rew = 0
+    with tqdm(range(episodes), desc='Training', unit='episode', dynamic_ncols=True) as progress:
+        for episode in progress:
+            steps = 0
+            terminated = False
+            truncated = False
+            # not using seed here to see how it performs
+            # across different grids
+            observation, _ = env.reset(seed=seed) 
+            state = observationToState(observation)
+            eps_rew = 0
 
-        while not (terminated or  truncated):
-            # next action
-            action = chooseAction(q_table, state, 0, env.action_space.n, rng)
-            next_obs, reward, terminated, truncated, _ = env.step(action)
-            next_state = observationToState(next_obs)
-            eps_rew += reward
-            state = next_state
-            steps += 1
+            while not (terminated or  truncated):
+                # next action
+                action = chooseAction(q_table, state, 0, env.action_space.n, rng)
+                next_obs, reward, terminated, truncated, _ = env.step(action)
+                next_state = observationToState(next_obs)
+                eps_rew += reward
+                state = next_state
+                steps += 1
 
-        tot_rewards.append(round(eps_rew, 3))
-        tot_steps.append(steps)
-        tot_successes.append(int(terminated))
+            tot_rewards.append(round(eps_rew, 3))
+            tot_steps.append(steps)
+            tot_successes.append(int(terminated))
+
+            '''
+            updating tqdm to track progress in train loop
+            '''
+            progress.set_postfix(
+                reward=f"{eps_rew:.2f}",
+                success=f"{sum(tot_successes)}/{len(tot_successes)}",
+            )
 
     env.close()
     return tot_rewards, tot_successes,tot_steps
@@ -161,7 +193,8 @@ if __name__ == '__main__':
                    help='random grid generation for each episode run on evaluation step (Y/N)',
                    type=str, default='N')
     p.add_argument('--render-eval', type=str, default=True)
-    p.add_argument('--output', type=str, default='./results/run.csv') # output directory for data
+    p.add_argument('--data-output', type=str, default='./results/run.csv') # output directory for data
+    p.add_argument('--model-output', type=str, default='./models/q_learn.pkl') # output directory for data
     
     args = p.parse_args()
 
@@ -175,8 +208,8 @@ if __name__ == '__main__':
     else:
         rand_policy = False 
     if args.random_seed in ('Y'):
-        eval_seed = None
-    else: eval_seed = args.seed
+        seed = None
+    else: seed = args.seed
     if args.render_eval in ('False', 'No', 'F', 'N'):
         rend = False
     else: rend = True 
@@ -185,7 +218,7 @@ if __name__ == '__main__':
         print('Running random policy')
         print(f'Seed used for run: {args.seed}')
         rewards, success, steps = random_policy(args.episodes, rend, seed=args.seed)
-        logData(None, None, None, rewards, steps, success, args.output)
+        logData(None, None, None, rewards, steps, success, args.data_output)
 
     else:
         print('Q-learning training process')
@@ -193,11 +226,16 @@ if __name__ == '__main__':
         # create q_table implementing q-learning
         q_table, train_rewards, train_successes, train_steps = train_q_learning(args.episodes, args.alpha,
                                                                      args.gamma, args.epsilon_start,
-                                                                     args.epsilon_end, args.seed) 
+                                                                     args.epsilon_end, rng_seed=args.seed, eps_seed=None) 
 
         # evaluated the resulting table
         eval_rewards, eval_successes, eval_steps = evaluate_q_learning(q_table, args.eval_episodes,
-                                                            render=rend, seed=eval_seed)
+                                                            render=rend, seed=seed)
+
+        """Save policy"""
+        num_actions = len(next(iter(q_table.values())))
+        save_q_table(q_table, args.model_output, num_actions)
+
         logData(train_rewards, train_steps, train_successes,
                 eval_rewards, eval_steps,
-                eval_successes, args.output)
+                eval_successes, args.data_output)
