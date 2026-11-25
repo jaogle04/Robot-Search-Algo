@@ -3,9 +3,8 @@
 run() {
     echo "Starting training"
     python code/dqn_training.py \
-        --episodes 2000 \
+        --episodes 3000 \
         --eval-episodes 200 \
-        --learning-rate 0.01 \
         --batch-size 128 \
         --random-seed Y \
         --output ./results/dqn.csv 
