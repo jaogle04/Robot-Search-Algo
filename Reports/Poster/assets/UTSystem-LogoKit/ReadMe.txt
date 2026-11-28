@@ -1,0 +1,1 @@
+For detailed information or questions about using University of Tennessee System logos, contact the UT System Division of Communications and Marketing at utsystemnews@tennessee.edu.
